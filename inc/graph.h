@@ -23,11 +23,64 @@ class Graph
 {
 public:
 	Graph();
+	Graph(std::string inputName)
+	{
+		this->setName(inputName);
+	}
+
+	std::string getName();
+
+	void addNode(std::shared_ptr<Node <T>> nodeToAdd);
+	void addNodes(std::vector<std::shared_ptr<Node<T>>> nodes);
+
+	void setName(std::string inputName);
+
+	void printAdjList();
+
+	void printNodeNeighbors(std::shared_ptr <Node <T> > nodeToObserve);
+
+	//soon
+	//void printNodeChildren(std::shared_ptr <Node <T> > nodeToObserve);
+	//void printNodeParents(std::shared_ptr <Node <T> > nodeToObserve);
 
 private:
 
-	std::unordered_set<std::shared_ptr< Node <T> > > nodesInGraph;
+	std::string name;
+
+	//cant have dupes
+	std::vector<std::shared_ptr< Node <T> > > nodesInGraph;
 
 };
+
+template <typename T>
+void Graph<T>::addNode(std::shared_ptr<Node <T>> nodeToAdd)
+{
+	this->nodesInGraph.push_back(nodeToAdd);
+}
+
+template <typename T>
+void Graph<T>::addNodes(std::vector<std::shared_ptr<Node<T>>> nodes)
+{
+	this->nodesInGraph.insert(this->nodesInGraph.end(), nodes.begin(), nodes.end());
+}
+
+template <typename T>
+void Graph<T>::printNodeNeighbors(std::shared_ptr <Node <T> > nodeToObserve)
+{
+	std::cout << nodeToObserve.getName() << " ";
+	for (std::string name: nodeToObserve.getNeighbors().getName())
+	{
+		std::cout << "-> " << name <<" ";
+	}
+}
+
+
+
+
+template <typename T>
+void Graph<T>::setName(std::string inputName)
+{
+	name = inputName;
+}
 
 #endif /* INC_GRAPH_H_ */
