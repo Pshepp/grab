@@ -20,6 +20,8 @@ template <class T>
 class Node
 {
 public:
+	Node();
+
 
 private:
 	unsigned short int index;
@@ -31,20 +33,8 @@ private:
 	bool isBridge;
 	bool isLeaf;
 
-	//return neighbors = out of in and out edges
-
-	/* our edges that are coming from the node. From my understanding
-	 * this should be unique because only
-	 *
-	 * Let us make a monogomy_ptr which will be a shared poitner but destructs when <2 references instead of <1
-	 */
-	//can I tuple unique? Aka have a unique ptr that owns the in and out edges?
-	std::unordered_set< std::shared_ptr<Edge <T> > > outEdges;
-	/*our edges that end up pointing to the node. I would like to also use unique_ptr here
-	 * due to the ability of if this node disapears then all connected edges get taken care
-	 * of.
-	 */
-	std::unordered_set< std::weak_ptr<Edge <T> > > inEdges;
+	std::unordered_set< std::unique_ptr<Edge <T> > > outEdges;
+	std::unordered_set< Edge <T> * > inEdges;
 
 	std::unordered_set< std::weak_ptr<Graph <T> > > parentGraphs;
 };

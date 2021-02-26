@@ -17,28 +17,17 @@
 #include <memory>
 
 #include "node.h"
-#include "edge.h"
 
 template <class T>
 class Graph
 {
 public:
+	Graph();
 
 private:
 
 	std::unordered_set<std::shared_ptr< Node <T> > > nodesInGraph;
-	std::unordered_set<std::shared_ptr< Edge <T> > > edgesInGraph;
 
 };
 
-
-/*
- * https://github.com/hsutter/gcpp
- *
- * http://www.club.cc.cmu.edu/~ajo/disseminate/Nweak_ptr_proposal.html
- *
- * https://stackoverflow.com/questions/15384443/doubly-linked-list-using-stdunique-ptr
- *
- * https://gist.github.com/mukunda-/153d802065c130e2956c
- */
 #endif /* INC_GRAPH_H_ */
