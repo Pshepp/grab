@@ -61,9 +61,16 @@ public:
 	}
 
 
-	Node(std::string inputName, std::vector<std::string> inputLabels, std::weak_ptr<Graph<T>> parentGraph)
+	Node(std::string inputName, std::vector<std::string> labelsToAdd, std::weak_ptr<Graph<T>> parentGraph)
 	{
-		defaultInit(inputName, labelsToAdd, parentGraph);
+		this->setIndex(1);
+		this->setName(inputName);
+		// TODO: Check if memory leak occurs
+		this->labels.swap(labelsToAdd);
+		this->setIsVisited(false);
+		this->setIsLeaf(false);
+		this->setIsBridge(false);
+		this->addGraphOwnership(parentGraph);
 	}
 
 	~Node()
@@ -108,6 +115,7 @@ public:
 
 	void addGraphOwnership(std::weak_ptr<Graph <T>> graphToAdd);
 
+	void addLabel(std::string inputLabel);
 
 	std::vector<std::shared_ptr<Node<T>>> getNeighbors();
 
