@@ -1,3 +1,13 @@
+/**
+ * @file main.cpp
+ * @brief THIS IS A NECRO'D BRANCH. PLEASE DO NOT USE.
+ *
+ * More info can go here.
+ *
+ * @author Preston
+ * @date 22 Feb 2021
+ */
+
 /*
  * PLEASE IGNORE THIS BRANCH DUE TO IT BEING A "ROUGH DRAFT".
  */

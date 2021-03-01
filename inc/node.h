@@ -1,6 +1,6 @@
 /**
  * @file node.h
- * @brief Something about this node class and its structure.
+ * @brief THIS IS A NECRO'D BRANCH. PLEASE DO NOT USE.
  *
  * More info can go here.
  *
