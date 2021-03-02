@@ -1,11 +1,14 @@
 /**
  * @file edge.h
- * @brief Something about this edge class and its structure.
- *
- * More info can go here.
- *
- * @author Preston
+ * @author Preston Sheppard
  * @date 22 Feb 2021
+ * @brief Our edge class is to be templated and used in conjunction with out node class.
+ *
+ * Please note our edges are designed to be "owned" by our node class. This is due to the fact
+ * that if we delete a single node then we must delete all edges connected to the node, but if
+ * we delete a single edge then we may not be required to delete the single node. Please note we do not support
+ * edge contraction, etc.
+ *
  */
 
 #ifndef INC_EDGE_H_
@@ -13,169 +16,93 @@
 
 #include <vector>
 #include <string>
-#include <unordered_set>
 #include <memory>
 
-#include "node.h"
+//may need to bite the bullet and just to a full include of the header
+template<class T> class Node;
 
 template<class T>
 class Edge
 {
 public:
+
+	/************************************************
+	 *  CONSTRUCTORS
+	 ***********************************************/
 	Edge()
 	{
-		defaultInit();
-	}
-
-	std::vector<std::weak_ptr<Graph<T> > > parentGraphs;
-
-	Edge(std::string inputName,	std::shared_ptr<Node<T> > sourceNode,std::shared_ptr<Node<T>> destNode)
-	{
+		this->setName("DEFAULT_EDGE_NAME");
 		this->setIndex(1);
-		this->setName(inputName);
-		this->setIsVisited(false);
 		this->setIsBridge(false);
-		this->sourceNode = make_shared<Node <T>>(sourceNode);
-		this->destNode = make_shared<Node <T>>(destNode);
+		this->setIsVisited(false);
 	}
 
-	void setName(std::string inputName);
+	Edge(std::string name)
+	{
+		this->setName(name);
+		this->setIndex(1);
+		this->setIsBridge(false);
+		this->setIsVisited(false);
+	}
+
+	~Edge();
+
+	/************************************************
+	 *  GETTER/SETTER PAIRS
+	 ***********************************************/
+	void setIndex(unsigned short int index);
+	unsigned short int getIndex();
+
+	void setName(std::string name);
 	std::string getName();
 
-	void setLabels(std::vector<std::string> inputLabels);
+	void setLabels(std::vector<std::string> labels);
 	std::vector<std::string> getLabels();
-	bool constainsLabel(std::string possibleLabel);
-
-	void setIndex(unsigned short int index);
-	short int getIndex();
-
-	void setIsVisited(bool isVisited);
-	bool getIsVisited();
 
 	void setIsBridge(bool isBridge);
 	bool getIsBridge();
 
-	void setSourceNode(std::shared_ptr<Node<T>> inputSourceNode);
+	void setIsVisited(bool isVisited);
+	bool getIsVisited();
+
+	void setSourceNode(std::shared_ptr<Node<T>> newSource);
 	std::shared_ptr<Node<T>> getSourceNode();
 
-	void setDestNode(std::shared_ptr<Node<T>> inputDestNode);
-	std::shared_ptr<Node<T>> getDestNode();
+	void setSinkNode(std::shared_ptr<Node<T>> newSink);
+	std::shared_ptr<Node<T>> getSinkNode();
+
+	/************************************************
+	 *  MUTATORS
+	 ***********************************************/
+	void addLabel(std::string label);
+	void addLabel(std::vector<std::string> labels); //note that we will just overload our singular add, rename to addLables?
 
 private:
-
-	unsigned short int index;
-	bool isBridge;
-	bool isVisited;
+	/************************************************
+	 *  IDENTIFIERS
+	 ***********************************************/
+	unsigned short int index; //Saves space, max is ~65,000. If we need more then easy to change
 	std::string name;
 	std::vector<std::string> labels;
 
-	std::shared_ptr<Node<T> > sourceNode;
-	std::shared_ptr<Node<T> > destNode;
+	/************************************************
+	 *  STRUCTURAL ATTRIBUTES
+	 ***********************************************/
+	//we do not include isLeaf due to a node being a leaf but not an edge.
+	bool isBridge;
 
-	void defaultInit();
-	void defaultInit(std::string inputName,
-			std::shared_ptr<Node<T>> sourceNode,
-			std::shared_ptr<Node<T>> destNode);
+	/************************************************
+	 *  ALGORITHM TRAVERSAL ATTRIBUTES
+	 ***********************************************/
+	bool isVisited;
+
+	/************************************************
+	 *  STRUCTURAL OWNERSHIP
+	 ***********************************************/
+	std::shared_ptr<Node<T>> sourceNode; 	//node we are coming from
+	std::shared_ptr<Node<T>> sinkNode;		//node we are going to
+
 };
 
-
-/************************************************
- *  GETTERS
- ***********************************************/
-
-template<typename T>
-short int Edge<T>::getIndex()
-{
-	return this->index;
-}
-
-template<typename T>
-std::vector<std::string> Edge<T>::getLabels()
-{
-	return this->labels;
-}
-
-template<typename T>
-bool Edge<T>::getIsBridge()
-{
-	return isBridge;
-}
-
-template<typename T>
-bool Edge<T>::getIsVisited()
-{
-	return isVisited;
-}
-
-template<typename T>
-std::string Edge<T>::getName()
-{
-	return name;
-}
-
-/************************************************
- *  SETTERS
- ***********************************************/
-
-template<typename T>
-void Edge<T>::setIndex(unsigned short int index)
-{
-	this->index = index;
-}
-
-// TODO: Check that this properly replaces the member vector
-template<typename T>
-void Edge<T>::setLabels(std::vector<std::string> inputLabels)
-{
-	this->labels = inputLabels;
-}
-
-template<typename T>
-void Edge<T>::setIsVisited(bool status)
-{
-	this->isVisited = status;
-}
-
-template<typename T>
-void Edge<T>::setIsBridge(bool status)
-{
-	this->isBridge = status;
-}
-
-//std::vector<std::unique_ptr<Edge<T> > > outEdges;
-
-
-template<typename T>
-void Edge <T>::setName(std::string inputName)
-{
-	this->name = inputName;
-}
-
-/************************************************
- *  PRIVATE FUNCTIONS
- ***********************************************/
-
-// CONSTRUCTION HELPERS
-template<typename T>
-void Edge<T>::defaultInit() //this should never be used
-{
-	this->setIndex(1);
-	this->setName("DEFAULT_EDGE_NAME");
-	this->setIsVisited(false);
-	this->setIsBridge(false);
-}
-
-template<typename T>
-void Edge<T>::defaultInit(std::string inputName,
-		std::shared_ptr<Node<T> > sourceNode,
-		std::shared_ptr<Node<T>> destNode)
-{
-	this->setIndex(1);
-	this->setName(inputName);
-	this->setIsVisited(false);
-	this->setIsBridge(false);
-	this->sourceNode = make_shared<Node <T>>(sourceNode);
-	this->destNode = make_shared<Node <T>>(destNode);
-}
-
 #endif /* INC_EDGE_H_ */
+

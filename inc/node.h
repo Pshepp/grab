@@ -1,490 +1,167 @@
 /**
  * @file node.h
- * @brief Something about this node class and its structure.
- *
- * More info can go here.
- *
- *	Notes:
- *		- Replace our std::vector labels with an unsorted set if we do not need to track
- *			label insertion order
- *
- *
- *	TODO:
- *		- Figure out how to properly creating our node index
- *		- Eventually use unorded_sets to increase speed
- *		- Figure out if our labels are truly a LIFO structure
- *
- * @author Preston
+ * @author Preston Sheppard
  * @date 22 Feb 2021
+ * @brief This node class is to be used as a part of our total graph abstraction "toolkit".
+ *
+ * We are defining a node object that utilizes smart pointers to not only increase efficiency but
+ * to also help denote "ownership". Our node has a unique_ptr to each connected edge, thus our node
+ * owns the edge. This is needed due to smart pointers needing some form of ownership hiearchy in
+ * order to allow for proper use. Please note our node pointer structure. ADD MORE INFO/CLARIFICATION AS NEEDED
+ *
+ * TODO:
+ * 		- Increase speed using unordered_set
+ * 		- Figure out how to properly create and track our node index, honestly just decriment all by one
+ * 			then allow our (possible) adjacency list/adjacency matrix rep to be created from nodes again.
+ * 		- Worry about operator overloading
+ * 		- Possibly switch rhs & lhs (parent -> child to child -> parent)
+ */
+
+/* TODO: FIX NODE PRESENCE IN MULTIPLE GRAPH STRUCTURES. FIGURE OUT HOW TO PROPERLY ALLOW NODES BE SHARED BETWEEN DIFFERENT GRAPH STRUCTURES
+ * 			THIS CURRENT IMPLEMENTATION WILL NOT WORK DUE TO DIFFERENT NODES IN DIFFERENT STRUCTURES
+ * 			NOT HAVING A DIFFERENCE IN EDGE PTRS. WE WOULD HAVE TO CREATE A 2D STRUCTURE WHERE HAVE SPECIFIC
+ * 			EDGES FOR SPECIFIC GRAPHS, POSSIBLY USE HASH MAP FOR OUR DIFFERENT EDGE CONNECTIONS(?). NOTE WE DO NOT WANTED CLONED
+ * 			MEMBERS SO UNOREDED SET OR SOMETHING OF THAT NATURE WOULD HELP. FUNCTIONS LISTED BELOW
+ *
+ * 	std::vector<std::vector<std::shared_ptr<Node<T>>>> getNeighbors(); //will most likeley want to return a 2d vector so we can denote which neighbors are which
+ * std::vector<std::shared_ptr<Node<T>>> getNeighbors(std::weak_ptr<Graph<T>> containingGraph); //get all neighbors within a specific graph structure
+ *
+ * void deleteEdge(std::shared_ptr<Node<T>> secondNode, std::weak_ptr<Graph<T>> containingGraph); //delete edge between 2 nodes in specific graph structure
+ * void deleteAllEdges(std::weak_ptr<Graph<T>> containingGraph); //delete all edges connected to calling node in specific graph structure
+ *
  */
 
 #ifndef INC_NODE_H_
 #define INC_NODE_H_
 
-/************************************************
- *  BEGIN TO REMOVE IN FINAL, USED FOR BUG TESTING
- ***********************************************/
-
-#include <iostream>
-
-/************************************************
- *  END TO REMOVE IN FINAL
- ***********************************************/
-
 #include <vector>
 #include <string>
-#include <algorithm>
-#include <unordered_set>
+#include <memory>
 
-#include "graph.h"
-#include "edge.h"
-
+//since we do not need to actually call any functions from graph etc. we just forward declare. Not needed yet
+template<class T> class Graph;
 
 template<class T>
-class Node: public std::enable_shared_from_this<Node<T> >
+class Node: public std::enable_shared_from_this<Node<T>>
 {
 public:
 
-	Node()
+	/************************************************
+	 *  CONSTRUCTORS
+	 ***********************************************/
+	Node() //should never be called
 	{
-		defaultInit();
-	}
-
-	Node(std::string inputName)
-	{
-		defaultInit(inputName);
-	}
-
-	Node(std::string inputName, std::vector<std::string> inputLabels)
-	{
-		defaultInit(inputName, inputLabels);
-	}
-
-
-	Node(std::string inputName, std::vector<std::string> labelsToAdd, std::weak_ptr<Graph<T>> parentGraph)
-	{
+		this->setName("DEFAULT_NODE_NAME");
 		this->setIndex(1);
-		this->setName(inputName);
-		// TODO: Check if memory leak occurs
-		this->labels.swap(labelsToAdd);
-		this->setIsVisited(false);
 		this->setIsLeaf(false);
 		this->setIsBridge(false);
-		this->addGraphOwnership(parentGraph);
+		this->setIsVisited(false);
 	}
 
-	~Node()
+	/* TODO: Figure out if we need the internal ptr to the object
+	 * https://www.nextptr.com/tutorial/ta1414193955/enable_shared_from_this-overview-examples-and-internals
+	 * https://codereview.stackexchange.com/questions/166395/custom-stdshared-ptrt-implementation
+	 */
+	//do we actually need an internal pointer to the object? Why not just use p.get() or something of the same?
+	Node(std::string name)
 	{
-		this->deleteNode();
+		this->setName(name);
+		this->setIndex(1);
+		this->setIsLeaf(false);
+		this->setIsBridge(false);
+		this->setIsVisited(false);
 	}
 
-	void setLabels(std::vector<std::string> inputLabels);
-	std::vector<std::string> getLabels();
-	bool constainsLabel(std::string possibleLabel);
+	~Node() //possibly just delete all edges connected then we are done when this goes out of scope. Keep in mind Node will still have a reference of shared_ptr from our Graph class. HMMMMMMM. Will mostly be worrying about our in edges and preventing dangling ptrs
+	{
 
-	void setName(std::string inputName);
+	}
+
+	/************************************************
+	 *  GETTER/SETTER PAIRS
+	 ***********************************************/
+	void setIndex(unsigned short int index);
+	unsigned short int getIndex();
+
+	void setName(std::string name);
 	std::string getName();
 
-	void setIsVisited(bool isVisited);
-	bool getIsVisited();
-
-	void setIsBridge(bool isBridge);
-	bool getIsBridge();
+	void setLabels(std::vector<std::string> labels);
+	std::vector<std::string> getLabels();
 
 	void setIsLeaf(bool isLeaf);
 	bool getIsLeaf();
 
-	void setIndex(unsigned short int index);
-	short int getIndex();
+	void setIsBridge(bool isBridge);
+	bool getIsBridge();
 
-	bool isNeighbor(Node<T> possibleNeighbor);
-	bool isChild(Node<T> possibleChild);
-	bool isParent(Node<T> possibleParent);
-
-	//delete from specific graph and all graphs
-	void deleteNode();
-	void deleteNode(std::weak_ptr<Graph<T>>);
-
-	void deleteEdge(std::unique_ptr<Edge<T>> outEdge);
-	void deleteEdge(Edge<T> *inEdge);
-	void deleteAllEdges();
-
-	void addNeighbor(std::shared_ptr<Node<T>> destNode, std::string inputName);
-	void deleteNeighbor(std::shared_ptr<Node<T>> neighborToDelete);
-	void deleteNeighbor(std::shared_ptr<Node<T>> neighborToDelete, std::weak_ptr<Graph <T>> containingGraph);
-
-	void addGraphOwnership(std::weak_ptr<Graph <T>> graphToAdd);
-
-	void addLabel(std::string inputLabel);
+	void setIsVisited(bool isVisited);
+	bool getIsVisited();
 
 	std::vector<std::shared_ptr<Node<T>>> getNeighbors();
 
-private:
-	unsigned short int index;
+	/************************************************
+	 *  MUTATORS
+	 ***********************************************/
+	void addLabel(std::string label);
+	void addLabel(std::vector<std::string> labels); //note that we will just overload our singular add, rename to addLables?
 
+	void addNeighbor(std::shared_ptr<Node<T>> neighborToAdd); //the calling node is the "parent", may want to sep this out into addChild/addParent
+	void deleteNeighbor(std::shared_ptr<Node<T>> neighborToRemove);
+
+	//delete an edge between 2 nodes, not sure if there will be a need to delete an edge from a specific edge id. Could make private
+	void deleteEdge(std::shared_ptr<Node<T>> secondNode); //delete edge between 2 nodes
+	void deleteAllEdges(); //delete all edges connected to the calling node
+
+
+	//	void addGraphOwnership(std::weak_ptr<Graph <T>> graphToAdd);
+
+	/************************************************
+	 *  STRUCTURAL/RELATIONSHIP CHECKS
+	 ***********************************************/
+	// TODO: Possibly would like some type of relationship check, just a bool to see if Node A == Node B for hunting and raw ptr checks
+	bool isNeighbor(Node<T> possibleNeighbor);
+	bool isParent(Node<T> possibleParent); //a parent is a node that owns the incomming edge
+	bool isChild(Node<T> possibleChild); //child is node that uses a raw ptr to reference the incomming edge
+
+	bool containsLabel(std::string labelToCheck);
+
+private:
+
+	/************************************************
+	 *  IDENTIFIERS
+	 ***********************************************/
+	unsigned short int index; //Saves space, max is ~65,000. If we need more then easy to change
 	std::string name;
 	std::vector<std::string> labels;
 
-	bool isVisited;
-	bool isBridge;
+	/************************************************
+	 *  STRUCTURAL ATTRIBUTES
+	 ***********************************************/
 	bool isLeaf;
+	bool isBridge;
 
-	std::vector<std::unique_ptr<Edge<T> > > outEdges;
-	std::vector<Edge<T>*> inEdges;
+	/************************************************
+	 *  ALGORITHM TRAVERSAL ATTRIBUTES
+	 ***********************************************/
+	bool isVisited;
 
-	std::vector<std::weak_ptr<Graph<T> > > parentGraphs;
+	/************************************************
+	 *  STRUCTURAL OWNERSHIP
+	 ***********************************************/
+	//std::vector<std::weak_ptr<Graph<T>>> parentGraphs; //graphs that this node is present in
+	std::vector<std::unique_ptr<Edge<T>>> outEdges;	//edges that are from this node
+	std::vector<Edge<T>*> inEdges;				//edges that are to this node
+	//NOTE: We must set our inEdge ptr to null/remove it before we destruct and get rid of the unique ptr to the edge itself!
 
-	void defaultInit();
-	void defaultInit(std::string name);
-	void defaultInit(std::string name, std::vector<std::string> initialLabels);
-	void Node<T>::defaultInit(std::string inputName,
-			std::vector<std::string> labelsToAdd, std::weak_ptr<Graph<T>> parentGraph);
+	/************************************************
+	 *  HELPER FUNCTIONS
+	 ***********************************************/
+	//TODO: possibly just remove and write them below
+	void deleteOutEdges(); 	//delete all outgoing edges from calling node
+	void deleteInEdge();		//delete all incoming edges from calling node
 
 };
-//Node
-
-/************************************************
- *  STRUCTURE CHECKS
- ***********************************************/
-
-template<typename T>
-bool Node<T>::isNeighbor(Node<T> possibleNeighbor)
-{
-	return (isChild(possibleNeighbor) || isParent(possibleNeighbor));
-}
-
-template<typename T>
-bool Node<T>::isChild(Node<T> possibleChild)
-{
-	for (auto const &edgePtr : this->outEdges)
-		if (edgePtr->destNode == possibleChild)
-			return true;
-	return false;
-}
-
-template<typename T>
-bool Node<T>::isParent(Node<T> possibleParent)
-{
-	for (auto const &edgePtr : this->inEdges)
-		if (edgePtr->sourceNode == possibleParent)
-			return true;
-	return false;
-}
-
-template<typename T>
-bool Node<T>::constainsLabel(std::string possibleLabel)
-{
-	return (std::find(this->labels.begin(), this->labels.end(), possibleLabel)
-			!= this->labels.end());
-}
-
-template<typename T>
-std::vector<std::shared_ptr<Node<T>>> Node<T>::getNeighbors()
-{
-	std::vector<std::shared_ptr<Node<T>>> neighbors;
-
-	for (auto &edge : this->outEdges)
-	{
-		neighbors.push_back(edge->destNode.lock()); //maybe need check
-	}
-
-	for (auto & edge : this->inEdges)
-	{
-		neighbors.push_back(edge->sourceNode.lock());
-	}
-
-	return neighbors;
-}
-
-/************************************************
- *  GETTERS
- ***********************************************/
-
-template<typename T>
-short int Node<T>::getIndex()
-{
-	return this->index;
-}
-
-template<typename T>
-std::vector<std::string> Node<T>::getLabels()
-{
-	return this->labels;
-}
-
-template<typename T>
-bool Node<T>::getIsBridge()
-{
-	return isBridge;
-}
-
-template<typename T>
-bool Node<T>::getIsVisited()
-{
-	return isVisited;
-}
-
-template<typename T>
-bool Node<T>::getIsLeaf()
-{
-	return isLeaf;
-}
-
-template<typename T>
-std::string Node<T>::getName()
-{
-	return name;
-}
-
-/************************************************
- *  SETTERS
- ***********************************************/
-
-template<typename T>
-void Node<T>::setIndex(unsigned short int index)
-{
-	this->index = index;
-}
-
-// TODO: Check that this properly replaces the member vector
-template<typename T>
-void Node<T>::setLabels(std::vector<std::string> inputLabels)
-{
-	this->labels = inputLabels;
-}
-
-template<typename T>
-void Node<T>::setIsVisited(bool status)
-{
-	this->isVisited = status;
-}
-
-template<typename T>
-void Node<T>::setIsBridge(bool status)
-{
-	this->isBridge = status;
-}
-
-template<typename T>
-void Node<T>::setIsLeaf(bool status)
-{
-	this->isLeaf = status;
-}
-
-template<typename T>
-void Node<T>::setName(std::string inputName)
-{
-	this->name = inputName;
-}
-
-/************************************************
- *  MUTATORS
- ***********************************************/
-
-//DATA ADDITION
-template<typename T>
-void Node<T>::addNeighbor(std::shared_ptr<Node<T>> destNode, std::string inputName)
-{
-//NOTE: We are creating a directed link between this node and the one passed
-
-	//creates our edge and puts it into our outedges vec
-	this->outEdges.push_back(std::unique_ptr<Edge<T>> (new Edge<T>(inputName, this->Node<T>, destNode <T>)));
-	Edge<T> * rawBackPtr = this->outEdges.back().get();
-	destNode->inEdges.push_back(rawBackPtr);
-}
-
-template<typename T>
-void Node<T>::addLabels(std::vector<std::string> inputLabels)
-{
-	this->labels.insert(this->labels.end(), inputLabels.begin(),
-			inputLabels.end());
-}
-
-template<typename T>
-void Node<T>::addLabel(std::string inputLabel)
-{
-	this->labels.push_back(inputLabel);
-}
-
-//want to use unordered set here, prevent dupes
-template<typename T>
-void Node<T>::addGraphOwnership(std::weak_ptr<Graph <T>> graphToAdd)
-{
-	this->parentGraphs.push_back(graphToAdd);
-}
-
-
-//DATA REMOVAL
-
-//void deleteNeighbor(std::shared_ptr<Node<T>> neighborToDelete);
-
-//deletes neighbor in ALL shared graph structures
-template<typename T>
-void Node<T>::deleteNeighbor(std::shared_ptr<Node<T>> neighborToDelete)
-{
-	//TODO: faster
-	for (auto& callingNodeGraph : this->parentGraphs)
-	{
-		for (auto& toDeleteNodeGraph : neighborToDelete->parentGraphs)
-		{
-			if (callingNodeGraph.lock().get() == toDeleteNodeGraph.lock().get())
-				neighborToDelete->deleteNode(toDeleteNodeGraph);
-		}
-	}
-}
-
-//delete neighbor in specific shared graph structure
-template<typename T>
-void Node<T>::deleteNeighbor(std::shared_ptr<Node<T>> neighborToDelete, std::weak_ptr<Graph <T>> containingGraph)
-{
-	if (!this->isNeighbor(neighborToDelete))
-	{
-		cout << "DEATH ON LINE, NOT NEIGHBOR! " << __LINE__ << endl;
-		return;
-	}
-	for (auto& callingNodeGraph : this->parentGraphs)
-	{
-		if (callingNodeGraph.lock().get() == containingGraph.lock().get())
-			neighborToDelete->deleteNode(callingNodeGraph);
-	}
-
-}
-
-
-//need to find a better name, delete from all graphs
-template<typename T>
-void Node<T>::deleteNode()
-{
-	for (auto & parentGraph : this->parentGraphs)
-		deleteNode(parentGraph);
-}
-
-//delete from specified graph
-template<typename T>
-void Node<T>::deleteNode(std::weak_ptr<Graph<T>> parentGraph)
-{
-	this->deleteAllEdges(); //ensure only shared ptr to this is now from our graph structures, need to pass parent graph func
-	//std::vector<std::weak_ptr<Graph<T> > > parentGraphs;
-
-	if (!parentGraph.lock())
-	{
-		std::cout << "\n************************************************";
-		std::cout << "WARNING CANNOT REMOVE SELF FROM PARENT GRAPHS LINE"
-				<< __LINE__;
-		std::cout << "************************************************";
-	}
-	else
-	{
-		std::shared_ptr<Graph<T>> sharedParentGraph = parentGraph.lock();
-
-		sharedParentGraph->nodesInGraph.erase(
-				std::remove(sharedParentGraph->nodesInGraph.begin(),
-						sharedParentGraph->nodesInGraph.end(), this->Node<T>),
-				sharedParentGraph->nodesInGraph.end());
-	}
-	this->parentGraphs.erase(
-			std::remove(this->parentGraphs.begin(), this->parentGraphs.end(),
-					parentGraph), this->parentGraphs.end());
-
-}
-
-//Ensure logic, should delete all edges.
-template<typename T>
-void Node<T>::deleteAllEdges()
-{
-	for (auto &outEdge : this->outEdges)
-	{
-		deleteEdge(outEdge);
-	}
-
-	for (auto &inEdge : this->inEdges)
-	{
-		deleteEdge(inEdge);
-	}
-}
-
-/*
- * TODO: Desketti
- */
-template<typename T>
-void Node<T>::deleteEdge(std::unique_ptr<Edge<T>> outEdge)
-{
-	for (auto &rawEdge : outEdge->destNode->inEdges)
-	{
-		//Removes all our raw pointers from the destination nodes vector, should only be hit once
-		if (rawEdge == outEdge.get())
-			outEdge->destNode->inEdges.erase(
-					std::remove(outEdge->destNode->inEdges.begin(),
-							outEdge->destNode->inEdges.end(), rawEdge),
-					outEdge->destNode->inEdges.end());
-	}
-	//hopefully destroys the unique ptr
-	this->outEdges.erase(
-			std::remove(this->outEdges.begin(), this->outEdges.end(), outEdge),
-			this->outEdges.end());
-}
-
-//to help show ownership we delete from the outEdge ptr, we just translate to our unique our edge ptr
-template<typename T>
-void Node<T>::deleteEdge(Edge<T> *inEdge)
-{
-	for (auto &uniqueEdge : inEdge->sourceNode->outEdges)
-	{
-		if (uniqueEdge.get() == inEdge)
-			deleteEdge(uniqueEdge);
-	}
-}
-
-/************************************************
- *  PRIVATE FUNCTIONS
- ***********************************************/
-
-// CONSTRUCTION HELPERS
-template<typename T>
-void Node<T>::defaultInit()
-{
-	this->setIndex(1);
-	this->setName("DEFAULT_NODE_NAME");
-	this->setIsVisited(false);
-	this->setIsLeaf(false);
-	this->setIsBridge(false);
-}
-
-template<typename T>
-void Node<T>::defaultInit(std::string inputName)
-{
-	this->setIndex(1);
-	this->setName(inputName);
-	this->setIsVisited(false);
-	this->setIsLeaf(false);
-	this->setIsBridge(false);
-}
-
-template<typename T>
-void Node<T>::defaultInit(std::string inputName,
-		std::vector<std::string> labelsToAdd)
-{
-	this->setIndex(1);
-	this->setName(inputName);
-	// TODO: Check if memory leak occurs
-	this->labels.swap(labelsToAdd);
-	this->setIsVisited(false);
-	this->setIsLeaf(false);
-	this->setIsBridge(false);
-}
-
-template<typename T>
-void Node<T>::defaultInit(std::string inputName,
-		std::vector<std::string> labelsToAdd, std::weak_ptr<Graph<T>> parentGraph)
-{
-	this->setIndex(1);
-	this->setName(inputName);
-	// TODO: Check if memory leak occurs
-	this->labels.swap(labelsToAdd);
-	this->setIsVisited(false);
-	this->setIsLeaf(false);
-	this->setIsBridge(false);
-	this->addGraphOwnership(parentGraph);
-}
 
 #endif /* INC_NODE_H_ */
+

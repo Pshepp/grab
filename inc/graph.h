@@ -1,100 +1,71 @@
 /**
  * @file graph.h
- * @brief Something about this graph class and its structure.
- *
- * More info can go here.
- *
- * @author Preston
+ * @author Preston Sheppard
  * @date 22 Feb 2021
+ * @brief This graph class is to be used as a part of our total graph abstraction "toolkit".
+ *
+ * The use of this is to act as a "structure" that contains our nodes, etc. within the graph. We
+ * will only be having pointers to our Nodes within the graph structure, recall how edges are owned by
+ * the nodes.
+ *
+ *  ADD MORE INFO/CLARIFICATION AS NEEDED
  */
 
 #ifndef INC_GRAPH_H_
 #define INC_GRAPH_H_
 
-#include <vector>
 #include <string>
-#include <unordered_set>
+#include <vector>
 #include <memory>
 
+//may be able to switch this to a forward declare
 #include "node.h"
 
-template <class T>
+template<class T>
 class Graph
 {
 public:
-	Graph();
-	Graph(std::string inputName)
+	Graph() //should never be called (maybe), honestly it is fine being called
 	{
-		this->setName(inputName);
+		this->setName(name);
+		this->setIndex(1);
 	}
 
+	/************************************************
+	 *  GETTER/SETTER PAIRS
+	 ***********************************************/
+	void setIndex(unsigned short int index);
+	unsigned short int getIndex();
+
+	void setName(std::string name);
 	std::string getName();
 
+	void setLabels(std::vector<std::string> labels);
+	std::vector<std::string> getLabels();
+
+	std::vector<std::vector<Node<T>>> getAdjacencyList(); //adj list built when called
+
+	std::vector<std::shared_ptr<Node<T>>> getNodes();
+
+	/************************************************
+	 *  MUTATORS
+	 ***********************************************/
+	void addLabel(std::string label);
+	void addLabel(std::vector<std::string> labels);
+
 	void addNode(std::shared_ptr<Node<T>> nodeToAdd);
-	void addNodes(std::vector<std::shared_ptr<Node<T>>> nodes);
 
-	void setName(std::string inputName);
-
-	void printAdjList();
-
-	void printNodeNeighbors(std::shared_ptr <Node <T> > nodeToObserve);
-
-
-	//soon
-	//void printNodeChildren(std::shared_ptr <Node <T> > nodeToObserve);
-	//void printNodeParents(std::shared_ptr <Node <T> > nodeToObserve);
+	void deleteNode(std::shared_ptr<Node<T>> nodeToDelete);
 
 private:
-
+	unsigned short int index;
 	std::string name;
+	std::vector<std::string> labels;
 
-	//cant have dupes
-	std::vector<std::shared_ptr< Node <T> > > nodesInGraph;
+	//TODO: Keep us from having dupes
+	std::vector<std::shared_ptr<Node<T>>> nodesWithin;
 
 };
 
-
-
-
-template <typename T>
-void Graph<T>::addNode(std::shared_ptr<Node <T>> nodeToAdd)
-{
-	this->nodesInGraph.push_back(nodeToAdd);
-}
-
-template <typename T>
-void Graph<T>::addNodes(std::vector<std::shared_ptr<Node<T>>> nodes)
-{
-	this->nodesInGraph.insert(this->nodesInGraph.end(), nodes.begin(), nodes.end());
-}
-
-//put in my data showing file (where we will handle all prints etc)
-template <typename T>
-void Graph<T>::printNodeNeighbors(std::shared_ptr<Node <T>> nodeToObserve)
-{
-	std::cout << nodeToObserve.getName() << " ";
-	for (std::string name : nodeToObserve.getNeighbors().getName())
-	{
-		std::cout << "-> " << name <<" ";
-	}
-	std::cout << endl;
-}
-
-//again, vector can cause dupes
-template <typename T>
-void Graph<T>::printAdjList()
-{
-	for (auto& node : this->nodesInGraph)
-	{
-		this->printNodeNeighbors(node);
-	}
-}
-
-
-template <typename T>
-void Graph<T>::setName(std::string inputName)
-{
-	name = inputName;
-}
-
 #endif /* INC_GRAPH_H_ */
+
