@@ -9,6 +9,11 @@
  * owns the edge. This is needed due to smart pointers needing some form of ownership hierarchy in
  * order to allow for proper use. Please note our node pointer structure. The reasoning behind a node
  * owning an edge is due to if a node is deleted all edges must be deleted but not necessarily vice-versa.
+ *
+ * Please note that not only are our nodes "owned" by the edges, but also by the over-arching graph
+ * structure itself. This way we are able to allow nodes to be within the graph structure yet have no
+ * edges.
+ *
  * ADD MORE INFO/CLARIFICATION AS NEEDED
  */
 
@@ -18,7 +23,8 @@
  * 					- Fix: Nest our set of edge pointers within a hashmap where key = graph ptr or something
  * 						robustly hashable and value is to our vector of ptrs for our nodes :o)
  * 			- Fix node presence in multiple graph structures, this will take adding a "layer" to our edges that correlates to each structure
- * 			- Possibly implement a relationship check (i.e Node A == Node B) for hunting and raw ptr checks.
+ * 			- Possibly implement a relationship check (i.e Node A == Node B) for hunting and raw ptr checks. Will make finding a specific
+ * 				node to delete much easier.
  * 			- If memory footprint is too large, begin passing by reference for some of our functions i.e.
  * 					- label addition, etc.
  * 					- returning of our neighbors
@@ -26,6 +32,9 @@
 
 #ifndef INC_NODE_H_
 #define INC_NODE_H_
+
+// TODO: REMOVE AFTER BUG TESTING
+#include <iostream>
 
 #include <vector>
 #include <string>
@@ -63,6 +72,9 @@ public:
 	~Node()
 	{
 		this->deleteAllEdges();
+		// TODO: REMOVE
+		std::cout << "Node Name: " << this->getName() << "\ removed" << std::endl;
+		std::cout << "Node Index: " << this->getIndex() << "\ removed" << std::endl;
 	}
 
 	/************************************************
@@ -86,6 +98,12 @@ public:
 	void setIsVisited(bool visited);
 	bool getIsVisited() const;
 
+	/* TODO: See if this is what we should protect with const. Makes much more sense
+	 * 			compared to our vec of neighbors, possibly return by ref. Possibly include
+	 * 			an overload that signifies "walking" to another node by changing our visited flag.
+	 * 			This would also be changing the connecting edge's visited flag.
+	 *
+	 */
 	std::shared_ptr<Node<T>> getNeighborByName(std::string name);
 	std::shared_ptr<Node<T>> getNeighborByIndex(unsigned short index);
 

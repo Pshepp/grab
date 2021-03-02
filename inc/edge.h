@@ -9,10 +9,17 @@
  * we delete a single edge then we may not be required to delete the single node. Please note we do not support
  * edge contraction, etc.
  *
+ * To ensure that an edge is deleted properly, it must be deleted from our node class. This is due
+ * to the node class containing the needed logic to prevent dangling pointers within said class.
+ *
+ * An edge cannot exist without at least two nodes.
  */
 
 #ifndef INC_EDGE_H_
 #define INC_EDGE_H_
+
+// TODO: REMOVE AFTER BUG TESTING
+#include <iostream>
 
 #include <vector>
 #include <string>
@@ -29,7 +36,7 @@ public:
 	/************************************************
 	 *  CONSTRUCTORS
 	 ***********************************************/
-	Edge()
+	Edge() //Honestly, should not be called. Need to think more.
 	{
 		this->setName("DEFAULT_EDGE_NAME");
 		this->setIndex(1);
@@ -37,34 +44,45 @@ public:
 		this->setIsVisited(false);
 	}
 
-	Edge(std::string name)
+	Edge(std::string name, std::shared_ptr<Node<T>> sourceNode, std::shared_ptr<Node<T>> sinkNode)
 	{
 		this->setName(name);
 		this->setIndex(1);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
+		this->sourceNode = make_shared<Node<T>>(sourceNode);
+		this->sinkNode = make_shared<Node<T>>(sinkNode);
 	}
 
-	~Edge();
+	//From my understanding, the unique_ptr that owns our edge will be what is deleted, and that will automatically take care of our shared ptrs
+	~Edge()
+	{
+		// TODO: REMOVE
+		std::cout << "Edge Name: " << this->getName() << "\ removed" << std::endl;
+		std::cout << "Edge Index: " << this->getIndex() << "\ removed" << std::endl;
+	}
 
 	/************************************************
 	 *  GETTER/SETTER PAIRS
 	 ***********************************************/
 	void setIndex(unsigned short int index);
-	unsigned short int getIndex();
+	unsigned short int getIndex() const;
 
 	void setName(std::string name);
-	std::string getName();
+	std::string getName() const;
 
 	void setLabels(std::vector<std::string> labels);
 	std::vector<std::string> getLabels();
 
-	void setIsBridge(bool isBridge);
-	bool getIsBridge();
+	void setIsBridge(bool bridge);
+	bool getIsBridge() const;
 
-	void setIsVisited(bool isVisited);
-	bool getIsVisited();
+	void setIsVisited(bool visited);
+	bool getIsVisited() const;
 
+	/* TODO: Do we want to protect our get node with const?
+	 *
+	 */
 	void setSourceNode(std::shared_ptr<Node<T>> newSource);
 	std::shared_ptr<Node<T>> getSourceNode();
 
@@ -75,26 +93,25 @@ public:
 	 *  MUTATORS
 	 ***********************************************/
 	void addLabel(std::string label);
-	void addLabel(std::vector<std::string> labels); //note that we will just overload our singular add, rename to addLables?
+	void addLabel(std::vector<std::string> labels);
 
 private:
 	/************************************************
 	 *  IDENTIFIERS
 	 ***********************************************/
-	unsigned short int index; //Saves space, max is ~65,000. If we need more then easy to change
+	unsigned short int index;
 	std::string name;
 	std::vector<std::string> labels;
 
 	/************************************************
 	 *  STRUCTURAL ATTRIBUTES
 	 ***********************************************/
-	//we do not include isLeaf due to a node being a leaf but not an edge.
-	bool isBridge;
+	bool bridge;
 
 	/************************************************
 	 *  ALGORITHM TRAVERSAL ATTRIBUTES
 	 ***********************************************/
-	bool isVisited;
+	bool visited;
 
 	/************************************************
 	 *  STRUCTURAL OWNERSHIP
