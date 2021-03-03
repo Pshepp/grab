@@ -44,7 +44,8 @@ public:
 		this->setIsVisited(false);
 	}
 
-	Edge(std::string name, std::shared_ptr<Node<T>> sourceNode, std::shared_ptr<Node<T>> sinkNode)
+	Edge(std::string name, std::shared_ptr<Node<T>> sourceNode,
+			std::shared_ptr<Node<T>> sinkNode)
 	{
 		this->setName(name);
 		this->setIndex(1);
@@ -58,8 +59,8 @@ public:
 	~Edge()
 	{
 		// TODO: REMOVE
-		std::cout << "Edge Name: " << this->getName() << "\ removed" << std::endl;
-		std::cout << "Edge Index: " << this->getIndex() << "\ removed" << std::endl;
+		std::cout << "REMOVING Edge Name: " << this->getName() << std::endl;
+		std::cout << "REMOVING Edge Index: " << this->getIndex() << std::endl;
 	}
 
 	/************************************************
@@ -74,6 +75,10 @@ public:
 	void setLabels(std::vector<std::string> labels);
 	std::vector<std::string> getLabels();
 
+	/* TODO: Bridge detection
+	 *
+	 * Just check if part of sep "mega" cycles?
+	 */
 	void setIsBridge(bool bridge);
 	bool getIsBridge() const;
 
@@ -94,6 +99,8 @@ public:
 	 ***********************************************/
 	void addLabel(std::string label);
 	void addLabel(std::vector<std::string> labels);
+
+	void switchOwnership();
 
 private:
 	/************************************************
@@ -120,6 +127,116 @@ private:
 	std::shared_ptr<Node<T>> sinkNode;		//node we are going to
 
 };
+
+/************************************************
+ *  GETTER/SETTER PAIRS
+ ***********************************************/
+
+template<class T>
+void Edge<T>::setIndex(unsigned short int index)
+{
+	this->index = index;
+}
+
+template<class T>
+unsigned short int Edge<T>::getIndex() const
+{
+	return this->index;
+}
+
+template<class T>
+void Edge<T>::setName(std::string name)
+{
+	this->name = name;
+}
+
+template<class T>
+std::string Edge<T>::getName() const
+{
+	return this->name;
+}
+
+template<class T>
+void Edge<T>::setLabels(std::vector<std::string> labels)
+{
+	this->labels = labels;
+}
+
+template<class T>
+std::vector<std::string> Edge<T>::getLabels()
+{
+	return this->labels;
+}
+
+template<class T>
+void Edge<T>::setIsBridge(bool bridge)
+{
+	this->bridge = bridge;
+}
+
+template<class T>
+bool Edge<T>::getIsBridge() const
+{
+	return this->bridge;
+}
+
+template<class T>
+void Edge<T>::setIsVisited(bool visited)
+{
+	this->visited = visited;
+}
+
+template<class T>
+bool Edge<T>::getIsVisited() const
+{
+	return this->visited;
+}
+
+template<class T>
+void Edge<T>::setSourceNode(std::shared_ptr<Node<T> > newSource)
+{
+	this->sourceNode = newSource;
+}
+
+template<class T>
+std::shared_ptr<Node<T> > Edge<T>::getSourceNode()
+{
+	return this->sourceNode;
+}
+
+template<class T>
+void Edge<T>::setSinkNode(std::shared_ptr<Node<T> > newSink)
+{
+	this->sinkNode = newSink;
+}
+
+template<class T>
+std::shared_ptr<Node<T> > Edge<T>::getSinkNode()
+{
+	return this->sinkNode;
+}
+
+/************************************************
+ *  MUTATORS
+ ***********************************************/
+template<class T>
+void Edge<T>::addLabel(std::string label)
+{
+	this->labels.push_back(label);
+}
+
+template<class T>
+void Edge<T>::addLabel(std::vector<std::string> labels)
+{
+	for (std::string currLabel : labels)
+		this->addLabel(currLabel);
+}
+
+template<class T>
+void Edge<T>::switchOwnership()
+{
+	this->sourceNode.swap(this->sinkNode);
+}
 
 #endif /* INC_EDGE_H_ */
 

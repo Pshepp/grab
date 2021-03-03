@@ -45,9 +45,9 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 
-//template<class T> class Graph; Not needed (for now)
-
+//cannot use forward declare due to creating our edges within our node class
 #include "edge.h"
 
 template<class T>
@@ -131,7 +131,8 @@ public:
 	void addLabel(std::string label);
 	void addLabel(std::vector<std::string> labels);
 
-	void addNeighbor(std::shared_ptr<Node<T>> neighborToAdd); //calling node is parent
+	void addNeighbor(std::shared_ptr<Node<T>> neighborToAdd,
+			std::string edgeName); //calling node is parent
 	void deleteNeighbor(std::shared_ptr<Node<T>> neighborToRemove);
 
 	void deleteEdge(std::shared_ptr<Node<T>> secondNode);
@@ -193,12 +194,12 @@ private:
 	 *  HELPER FUNCTIONS
 	 ***********************************************/
 	void deleteInEdge(Edge<T> *inEdgeToDelete);
-	void deleteOutEdge(std::unique_ptr<Edge<T>> outEdgeToDelete); //should be fine not having to get our unique ptr, we are working only within scope of class, possibly incorrect
+	void deleteOutEdge(Edge<T> *outEdgeToDelete); //should be fine not having to get our unique ptr, we are working only within scope of class, possibly incorrect
 
 	bool hasInEdge(Edge<T> *possibleInEdge);
 	bool hasOutEdge(Edge<T> *possibleOutEdge);
 
-	Edge<T>* sharedEdge(std::shared_ptr<Node<T>> nodeB);
+	Edge<T>* getConnectingEdge(std::shared_ptr<Node<T>> nodeB);
 };
 
 /************************************************
@@ -380,19 +381,88 @@ bool Node<T>::getIsVisited() const
 	return this->visited;
 }
 
+/**
+ * @brief Checks all neighbors and returns a single neighbor that has the same name
+ *
+ * This will most likely break when usign the unique_ptr case
+ *
+ * @pre Calling node actually exists, all names are unique
+ * @post
+ * @param name The name of the node we are looking for
+ * @return the Shared pointer to the appropriate node or null if it does not exist
+ */
 template<class T>
 std::shared_ptr<Node<T> > Node<T>::getNeighborByName(std::string name)
 {
+	std::vector<std::shared_ptr<Node<T>>> neighbors = this->getNeighbors();
+	for (auto &possibleHit : neighbors)
+	{
+		if (possibleHit.get()->getName() == name)
+		{
+			lazyInfo(__LINE__, __func__,
+					"Found Neighbor of " + this->getName() + " with name :"
+							+ name);
+			return possibleHit;
+		}
+	}
+	badBehavior(__LINE__, __func__);
+	return null;
 }
 
+/**
+ * @brief Checks all neighbors and gets one that matches the searched for index
+ *
+ * @pre Calling node actually exists
+ * @post
+ * @param index The value we want to use to find the node
+ * @return the shared pointer to the appropriate node or null if it does not exist
+ */
 template<class T>
 std::shared_ptr<Node<T> > Node<T>::getNeighborByIndex(unsigned short index)
 {
+	std::vector<std::shared_ptr<Node<T>>> neighbors = this->getNeighbors();
+	for (auto &possibleHit : neighbors)
+	{
+		if (possibleHit.get()->getIndex() == index)
+		{
+			lazyInfo(__LINE__, __func__,
+					"Found Neighbor of " + this->getName() + " with index :"
+							+ index);
+			return possibleHit;
+		}
+	}
+	badBehavior(__LINE__, __func__);
+	return null;
 }
 
+/**
+ * @brief Gets all neighbors to a specific node
+ *
+ * 	Note that we may need to worry about if outEdge/inEdge has nothing in them but this should not be the case.
+ *
+ * @pre calling node actually exists
+ * @return neighbors A vector of shared pointers to all the calling node's neighbors
+ */
 template<class T>
 std::vector<std::shared_ptr<Node<T> > > Node<T>::getNeighbors()
 {
+	std::vector<std::shared_ptr<Node<T>>> neighbors;
+	//get children
+	for (auto &&outEdge : this->outEdges)
+	{
+		lazyInfo(__LINE__, __func__,
+				"Child neighbor added: "
+						+ outEdge->getSinkNode().get()->getName());
+		neighbors.push_back(outEdge->getSinkNode());
+	}
+	for (auto &inEdge : this->inEdges)
+	{
+		lazyInfo(__LINE__, __func__,
+				"Parent neighbor added: "
+						+ inEdge->getSourceNode().get()->getName());
+		neighbors.push_back(inEdge->getSourceNode());
+	}
+	return neighbors;
 }
 
 /************************************************
@@ -429,6 +499,7 @@ bool Node<T>::isNeighbor(std::shared_ptr<Node<T>> possibleNeighbor)
 template<class T>
 bool Node<T>::isChild(std::shared_ptr<Node<T>> possibleParent)
 {
+
 	for (auto const &inEdgePtr : this->inEdges)
 	{
 		//ensures that both of our shared ptrs go to same obj. What if null?
@@ -453,7 +524,7 @@ template<class T>
 bool Node<T>::isParent(std::shared_ptr<Node<T>> possibleChild)
 {
 	//lazy switch, just check if our child is actually a child of the calling node.
-	return possibleChild.isChild(this);
+	return possibleChild.get()->isChild(this);
 }
 
 /**
@@ -530,26 +601,76 @@ void Node<T>::addLabel(std::vector<std::string> labels)
  *  GETTER/SETTER PAIRS
  ***********************************************/
 
+/**
+ * @brief Add a neighbor node as a child to the calling node
+ *
+ * Please note that there may be an issue passing our this.node to the function
+ *
+ * @pre Both nodes exist
+ * @post There is now an edge linking the two nodes from paretn to child
+ * @param neighborToAdd The neighbor we want to create a link to
+ * @param edgeName A name we would like to set the edge to
+ */
 template<class T>
-void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd)
+void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd,
+		std::string edgeName)
 {
+	Edge<T> *newRawEdge = new Edge<T>(edgeName, this, neighborToAdd);
+	std::unique_ptr<Edge<T>> newUniqueEdge(newRawEdge);
+	neighborToAdd.get()->inEdges.push_back(newEdge);
+	this->outEdges.push_back(newUniqueEdge);
 }
 
+//TODO: Is there really a need for this? Honestly IMO no, we would want to delete a node/neighbor from our graph structure class
 template<class T>
-void Node<T>::deleteNeighbor(std::shared_ptr<Node<T> > neighborToRemove)
+void Node<T>::deleteNeighbor(std::shared_ptr<Node<T>> neighborToRemove)
 {
-	if (!(this->isNeighbor(neighborToRemove)))
-		std::cout << "ERROR " << __LINE__ << std::endl;
+	std::cout << "NOT IMPLEMENTED PROBABLY DONT NEED" << std::endl;
 }
 
+/**
+ * @brief Deletes an edge that is between two connecting nodes.
+ *
+ * How would we like to worry regarding error handling, as of now this assumes at most 1
+ * edge between two nodes.
+ *
+ * @pre The two nodes exist
+ * @post If the nodes were connected then the connection (edge) is removed
+ * @param secondNode
+ */
 template<class T>
 void Node<T>::deleteEdge(std::shared_ptr<Node<T> > secondNode)
 {
+	if (!this->isNeighbor(secondNode))
+	{
+		badBehavior(__LINE__, __func__);
+		return;
+	}
+	//this->getConnectingEdge(secondNode)->get().sourceNode();;
+	Edge<T> *tempLazy = this->getConnectingEdge(secondNode);
+	tempLazy->getSourceNode().get()->deleteOutEdge(tempLazy);
+	//check, now we want them to not be neighbors
+	if (this->isNeighbor(secondNode))
+		badBehavior(__LINE__, __func__);
 }
 
+/**
+ * @brief Deletes all edges connected to the calling node
+ *
+ * @pre
+ * @post The calling node has no edges connected, neither in nor out
+ */
 template<class T>
 void Node<T>::deleteAllEdges()
 {
+	//Warning O(N^2), could be worse if we worry about the internal loops we begin calling
+	for (auto &&outEdge : this->outEdges)
+		this->deleteOutEdge(outEdge.get());
+	//we just travers to the source of our edge then delete the outer edge
+	for (auto &inEdge : this->inEdges)
+		inEdge->getSourceNode().get()->deleteOutEdge(inEdge);
+	if ((this->inEdges.size() != 0) && (this->outEdges.size != 0))
+		badBehavior(__LINE__, __func__);
 }
 
 /**
@@ -573,46 +694,174 @@ void Node<T>::switchEdgeDirection(std::shared_ptr<Node<T> > nodeB)
 
 	if (!(this->isNeighbor(nodeB)))
 	{
-		//Gross
-		std::cout << "ERROR " << __LINE__ << std::endl;
+		badBehavior(__LINE__, __func__);
 		return;
 	}
 	//Gross
-	Edge<T> *sharedEdge = this->sharedEdge(nodeB);
+
+	Edge<T> *connectingEdge = this->getConnectingEdge(nodeB);
 
 	/* We are ensuring both nodes actually have the edge we are trying to swap. This is mostly
-	 * due to me being paranoid about if this sand castle will actually hold together.
+	 * due to me being paranoid about if this sand castle will actually hold together. Helps ensure our data
+	 * stays clean and will die if borked data
 	 */
-	if ((sharedEdge->getSourceNode().hasOutEdge(sharedEdge))
-			&& (sharedEdge->getSinkNode().hasInEdge(sharedEdge)))
+	if ((connectingEdge->getSourceNode().get()->hasOutEdge(connectingEdge))
+			&& !(connectingEdge->getSourceNode().get()->hasInEdge(
+					connectingEdge))
+			&& !(connectingEdge->getSinkNode().get()->hasOutEdge(connectingEdge))
+			&& (connectingEdge->getSinkNode().get()->hasInEdge(connectingEdge)))
 	{
+		//get current structure to check later
+		bool isCallingSource = this->hasOutEdge(connectingEdge);
+		bool isCallingSink = this->hasInEdge(connectingEdge);
+
+		bool checkedNodeSource = nodeB.get()->hasOutEdge(connectingEdge);
+		bool checkedNodeSink = nodeB.get()->hasInEdge(connectingEdge);
+
+		//should not hit here due to neighbor check but stay noided, will hit if edge sourced and sunk by same node.
+		if ((isCallingSource == isCallingSink)
+				|| (checkedNodeSource == checkedNodeSink))
+		{
+			badBehavior(__LINE__, __func__);
+			return;
+		}
 		//release the unique ptr, delete the one that now pts to null, add our raw to previous unique node, create new unique and put in our previous nodes raw vector
 
+		//sketti, first we find, release, then delete the previous unique_ptr
+		for (int currIndex = 0;
+				currIndex
+						< connectingEdge->getSourceNode().get()->outEdges.size();
+				currIndex++)
+		{
+			if (connectingEdge->getSourceNode().get()->outEdges[currIndex].get()
+					== connectingEdge) //found what we want
+			{
+				//found correct edge, so let us move our unique ptr into our sink node that is now our source (i.e. out)
+				connectingEdge->getSinkNode().get()->outEdges(
+						std::move(
+								connectingEdge->getSourceNode().get()->outEdges[currIndex]));
+				//remove the now to null unique_ptr from out source node relation, delete by index cause easier for now
+				connectingEdge->getSourceNode().get()->outEdges.erase(
+						connectingEdge->getSourceNode().get()->outEdges.begin()
+								+ currIndex);
+				lazyInfo(__LINE__, __func__,
+						"Our unique ptr to edge  " + connectingEdge->getName()
+								+ "\n\t\tnow in: "
+								+ connectingEdge->getSinkNode().get()->getName()
+								+ "\n\t\twas in: "
+								+ connectingEdge->getSourceNode().get()->getName());
+
+			}
+		} //end our for loop that finds proper location for unique ptr
+
+		//now remove from our original sink node and put it in our new sink node
+		connectingEdge->getSinkNode().get()->deleteInEdge(connectingEdge);
+		connectingEdge->getSourceNode().get()->inEdges.push_back(
+				connectingEdge);
+		lazyInfo(__LINE__, __func__,
+				"Before Switch: \n\tEdge Source:"
+						+ connectingEdge->getSourceNode().get()->getName()
+						+ "\n\tEdge Sink: "
+						+ connectingEdge->getSinkNode().get()->getName());
+		connectingEdge->switchOwnership();
+		lazyInfo(__LINE__, __func__,
+				"After Switch: \n\tEdge Source:"
+						+ connectingEdge->getSourceNode().get()->getName()
+						+ "\n\tEdge Sink: "
+						+ connectingEdge->getSinkNode().get()->getName());
+
+		//now we check to make sure this worked proper
+		//these should all flip at the end of this, if one of them doesnt we know we have an issue
+		if ((isCallingSource == this->hasOutEdge(connectingEdge))
+				|| (isCallingSink == this->hasInEdge(connectingEdge))
+				|| (checkedNodeSource == nodeB.get()->hasOutEdge(connectingEdge))
+				|| (checkedNodeSink == nodeB.get()->hasInEdge(connectingEdge)))
+			badBehavior(__LINE__, __func__);
+		else
+			lazyInfo(__LINE__, __func__, "Switch successful");
 	}
 	else
 	{
-		std::cout << "ERROR " << __LINE__ << std::endl;
+		badBehavior(__LINE__, __func__);
 		return;
 	}
-
 }
 
 /************************************************
  *  HELPER FUNCTIONS
  ***********************************************/
 
+/**
+ * @brief Helper function to delete an edge sunk by the calling node
+ *
+ * Note that this only removes the value from our inEdge vector. Should probably worry about
+ * updating our edge sink member but that is a TODO
+ *
+ * @pre
+ * @post
+ * @tparam T
+ * @param inEdgeToDelete
+ */
 template<class T>
-inline void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
+void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 {
-}
-
-template<class T>
-inline void Node<T>::deleteOutEdge(std::unique_ptr<Edge<T> > outEdgeToDelete)
-{
+	if (hasInEdge(inEdgeToDelete))
+	{
+		this->inEdges.erase(
+				std::remove(this->inEdges.begin(), this->inEdges.end(),
+						inEdgeToDelete), this->inEdges.end());
+		lazyInfo(__LINE__, __func__,
+				"inEdge to " + this->getName() + " deleted");
+	}
+	else if (this->hasOutEdge(inEdgeToDelete))
+	{
+		lazyInfo(__LINE__, __func__,
+				"In edge was actually an out edge of node " + this->getName());
+	}
+	else
+		badBehavior(__LINE__, __func__);
 }
 
 /**
- * @brief Helper function to validate if we do contain (poitned to by) a specific edge
+ * @brief Helper to delete an edge sourced by the calling node
+ *
+ * Keep in mind that the only thing not wrapped by a smart pointer is the rear raw ptr reference within a sink node.
+ * Thus if we ever delete an outgoing edge from a node we must ensure that we have no dangling raws.
+ *
+ * @pre
+ * @post
+ * @param outEdgeToDelete
+ */
+template<class T>
+void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
+{
+	if (this->hasOutEdge(outEdgeToDelete))
+	{
+		//as of now let us just delete the value using index, worst case O(N) but thing is we at most have ~5 bonds in our use case
+		for (int currIndex = 0; currIndex < this->outEdges.size(); currIndex++)
+		{
+			if (this->outEdges[currIndex].get() == outEdgeToDelete)
+			{
+				//we must delete the raw ptr reference in our child node, so we grab it then delete this edge that is going into the node
+				outEdgeToDelete->getSinkNode().get()->deleteInEdge(
+						outEdgeToDelete);
+				this->outEdges.erase(this->outEdges.begin() + currIndex);
+				lazyInfo(__LINE__, __func__,
+						"outEdge from " + this->getName() + " deleted");
+			}
+		}
+	}
+	else if (this->hasInEdge(outEdgeToDelete))
+	{
+		lazyInfo(__LINE__, __func__,
+				"Out edge was actually an in edge of node " + this->getName());
+	}
+	else
+		badBehavior(__LINE__, __func__);
+}
+
+/**
+ * @brief Helper function to vainlinelidate if we do contain (poitned to by) a specific edge
  *
  * @pre We have an edge and node to check against
  * @param possibleInEdge
@@ -670,7 +919,7 @@ bool Node<T>::hasOutEdge(Edge<T> *possibleOutEdge)
  * @return a raw pointer to our edge
  */
 template<class T>
-Edge<T>* Node<T>::sharedEdge(std::shared_ptr<Node<T> > nodeB)
+Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T> > nodeB)
 {
 	if (this->isNeighbor(nodeB))
 	{
@@ -679,16 +928,35 @@ Edge<T>* Node<T>::sharedEdge(std::shared_ptr<Node<T> > nodeB)
 			if (inEdgePtr->getSourceNode().get() == nodeB.get())
 				return inEdgeptr;
 		}
-		for (auto &inEdgeptr : nodeB->inEdges)
+		for (auto &inEdgeptr : nodeB.get()->inEdges)
 		{
-			if (inEdgeptr->getSourceNode().get() == this->Node<T> .get()) //will most likely need the node to know its own pointer smh
+			if (inEdgeptr->getSourceNode().get() == &this) //will most likely need the node to know its own pointer smh, does this properly return address
 				return inEdgeptr;
 		}
 	}
-	//TODO: Actually worry about this
-	std::cout << "ERROR " << __LINE__ << std::endl;
+	badBehavior(__LINE__, __func__);
 	return null;
 }
 
+//LAZY ERROR USE FOLLOWING TO CALL badBehavior(__LINE__, __func__);
+void badBehavior(int lineBroke, const char *funcNameBroke)
+{
+	std::cout << "****************************************" << std::endl
+			<< "\tBORKED" << "****************************************"
+			<< std::endl;
+	std::cout << "Borked Function Name: " << funcNameBroke << std::endl;
+	std::cout << "Line Number: " << lineBroke << std::endl << std::endl;
+}
+
+//LAZY INFORMATION OUTPUT
+void lazyInfo(int lineCalled, const char *funcName, std::string infoToPass)
+{
+	std::cout << "****************************************" << std::endl
+			<< "\tINFO" << "****************************************"
+			<< std::endl;
+	std::cout << "Info Function Name: " << funcName << std::endl;
+	std::cout << "Msg: " << infoToPass;
+	std::cout << "Line Number: " << lineCalled << std::endl << std::endl;
+}
 #endif /* INC_NODE_H_ */
 
