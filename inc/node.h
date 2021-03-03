@@ -33,6 +33,7 @@
  * 			- Algos (mostly worried about how we want to call them, should become clear once all are clean):
  * 				- Leaf detection
  * 				- Bridge detection
+ * 			- Good error throwing instead of cout laziness
  */
 
 #ifndef INC_NODE_H_
@@ -194,6 +195,10 @@ private:
 	void deleteInEdge(Edge<T> *inEdgeToDelete);
 	void deleteOutEdge(std::unique_ptr<Edge<T>> outEdgeToDelete); //should be fine not having to get our unique ptr, we are working only within scope of class, possibly incorrect
 
+	bool hasInEdge(Edge<T> *possibleInEdge);
+	bool hasOutEdge(Edge<T> *possibleOutEdge);
+
+	Edge<T>* sharedEdge(std::shared_ptr<Node<T>> nodeB);
 };
 
 /************************************************
@@ -533,6 +538,8 @@ void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd)
 template<class T>
 void Node<T>::deleteNeighbor(std::shared_ptr<Node<T> > neighborToRemove)
 {
+	if (!(this->isNeighbor(neighborToRemove)))
+		std::cout << "ERROR " << __LINE__ << std::endl;
 }
 
 template<class T>
@@ -545,9 +552,49 @@ void Node<T>::deleteAllEdges()
 {
 }
 
+/**
+ * @brief Used to switch the ownership of an edge
+ *
+ * This is used to switch our edge "direction" which will do so regardless if a parent calls or child calls this.
+ * It is easier if we call the raw ptr first idk why my brain (i.e. we are starting at our child node then switching)
+ *
+ * TODO: Clean
+ *
+ * @pre the two nodes share an edge
+ * @post the nodes edges are switched, thus if the calling node was the parent it is now the child and vice-versa
+ * @param nodeB the node we want to share an edge with.
+ */
 template<class T>
 void Node<T>::switchEdgeDirection(std::shared_ptr<Node<T> > nodeB)
 {
+	/*
+	 * NOTE: Let us move our unique_ptr that was in our original parent and move it to our new parent
+	 */
+
+	if (!(this->isNeighbor(nodeB)))
+	{
+		//Gross
+		std::cout << "ERROR " << __LINE__ << std::endl;
+		return;
+	}
+	//Gross
+	Edge<T> *sharedEdge = this->sharedEdge(nodeB);
+
+	/* We are ensuring both nodes actually have the edge we are trying to swap. This is mostly
+	 * due to me being paranoid about if this sand castle will actually hold together.
+	 */
+	if ((sharedEdge->getSourceNode().hasOutEdge(sharedEdge))
+			&& (sharedEdge->getSinkNode().hasInEdge(sharedEdge)))
+	{
+		//release the unique ptr, delete the one that now pts to null, add our raw to previous unique node, create new unique and put in our previous nodes raw vector
+
+	}
+	else
+	{
+		std::cout << "ERROR " << __LINE__ << std::endl;
+		return;
+	}
+
 }
 
 /************************************************
@@ -562,6 +609,85 @@ inline void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 template<class T>
 inline void Node<T>::deleteOutEdge(std::unique_ptr<Edge<T> > outEdgeToDelete)
 {
+}
+
+/**
+ * @brief Helper function to validate if we do contain (poitned to by) a specific edge
+ *
+ * @pre We have an edge and node to check against
+ * @param possibleInEdge
+ * @return True if we sink that edge, false otherwise
+ */
+template<class T>
+bool Node<T>::hasInEdge(Edge<T> *possibleInEdge)
+{
+	for (auto &inEdgePtr : this->inEdges)
+	{
+		if (inEdgePtr == possibleInEdge)
+			return true;
+	}
+	return false;
+}
+
+/**
+ * @brief Helper function to validate we do contain (own) a specific edge.
+ *
+ * Please note that this using a pointer to the object itself which bypasses
+ * our smart pointer use. This is done for convenience, please note this.
+ *
+ * @pre We have a node and edge to check with and you are not abusing the ownership hierarchy
+ * @param possibleOutEdge Edge to see if we have
+ * @return True if we own the edge, false otherwise
+ */
+template<class T>
+bool Node<T>::hasOutEdge(Edge<T> *possibleOutEdge)
+{
+	for (auto &&outEdgePtr : this->outEdges)
+	{
+		if (outEdgePtr.get() == possibleOutEdge)
+			return true;
+	}
+	return false;
+}
+
+/**
+ * @brief A helper function that returns the connecting edge between two nodes.
+ *
+ * Even though this is a helper function, it is a very dangerous one which passes the RAW
+ * pointer to our edge. The main reasoning for this is to make it much easier to perform
+ * operations with out node, but again be careful using this.
+ *
+ * Steals the logic from our checks, but we just want to hide this functionality due to it
+ * being dangerous
+ *
+ * TODO: - Return a vector instead for when we have multiple edges between nodes. Is this needed?
+ * 		 - Actually worry about this, feels very dirty and unsure if any cleaner ways to do this.
+ * 		 - From my understanding this SHOULD return a reference to the pointer within the vector but am unsure
+ *
+ * @pre Two nodes share an edge and you promise you are not abusing the ownership hierarchy
+ * @post We get the raw pointer to the edge that connects the two nodes
+ * @param nodeB Node to check
+ * @return a raw pointer to our edge
+ */
+template<class T>
+Edge<T>* Node<T>::sharedEdge(std::shared_ptr<Node<T> > nodeB)
+{
+	if (this->isNeighbor(nodeB))
+	{
+		for (auto &inEdgeptr : this->inEdges)
+		{
+			if (inEdgePtr->getSourceNode().get() == nodeB.get())
+				return inEdgeptr;
+		}
+		for (auto &inEdgeptr : nodeB->inEdges)
+		{
+			if (inEdgeptr->getSourceNode().get() == this->Node<T> .get()) //will most likely need the node to know its own pointer smh
+				return inEdgeptr;
+		}
+	}
+	//TODO: Actually worry about this
+	std::cout << "ERROR " << __LINE__ << std::endl;
+	return null;
 }
 
 #endif /* INC_NODE_H_ */
