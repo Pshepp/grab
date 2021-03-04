@@ -17,27 +17,56 @@
  * 			- Implement our nodes being owned by a graph structure.
  * 			- FIX SET INDEX!! Proper index tracking for all of our nodes and edges
  *
- * 	Reading/References:
- * 		- http://nasacj.net/?p=134
- * 		- https://www.cplusplus.com/doc/tutorial/polymorphism/
- * 		- https://stackoverflow.com/questions/17851088/using-a-stdunordered-set-of-stdunique-ptr
- * 		- https://stackoverflow.com/questions/34401534/how-to-return-a-reference-to-an-object-that-is-inside-a-vector-of-smart-pointers
- *		- https://codereview.stackexchange.com/questions/200737/custom-smart-pointer-class-template
- *		- https://codereview.stackexchange.com/questions/26353/efficient-smart-pointer-implementation-in-c
- *		- https://www.cplusplus.com/doc/tutorial/
- *		- https://embeddedartistry.com/blog/2017/01/11/stdshared_ptr-and-shared_from_this/
- *		- https://www.geeksforgeeks.org/templates-cpp/
- *		- http://fnch.users.sourceforge.net/doxygen_c.html
- *		- https://www.doxygen.nl/manual/docblocks.html
- *		- https://www.boost.org/doc/libs/1_75_0/libs/graph/doc/graph_theory_review.html
- *
  */
 
-#include <iostream>
 
+
+#include <iostream>
+#include "../inc/graph.h"
+#include "../inc/node.h"
+#include "../inc/edge.h"
+
+class Atom
+{
+	public:
+	Atom(std::string name) : atomName (name)
+	{
+		atomNodePtr = std::make_shared<Node<Atom>>(this, name);
+	}
+	void addBond(Atom *otherAtom)
+	{
+		atomNodePtr->addNeighbor(otherAtom->getNode(), this->getName()+"->"+otherAtom->getName());
+	}
+	void removeBond(Atom *otherAtom)
+	{
+		atomNodePtr->deleteEdge(otherAtom->getNode());
+	}
+	std::vector<std::shared_ptr<Atom>> getNeighbors()
+		{
+		return this->getNode()->getNeighbors();
+		}
+	const std::shared_ptr<Node<Atom>> getNode()
+		{
+		return atomNodePtr;
+		}
+	std::string getName()
+	{
+		return atomName;
+	}
+	private:
+	std::shared_ptr<Node<Atom>> atomNodePtr;
+	std::string atomName;
+};
 
 int main()
 {
+	Atom * atom0 = new Atom("my");
+	Atom * atom1 = new Atom("name");
+	Atom * atom2 = new Atom("jeff");
+
+	atom0->addBond(atom2);
+
+
 	std::cout << "Yes this is our main lole" << std::endl;
 			return 0;
 }

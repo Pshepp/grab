@@ -453,16 +453,20 @@ std::vector<std::shared_ptr<Node<T> > > Node<T>::getNeighbors()
 	//get children
 	for (auto &&outEdge : this->outEdges)
 	{
-		lazyInfo(__LINE__, __func__,
+		/* TODO: Fix
+		 * lazyInfo(__LINE__, __func__,
 				"Child neighbor added: "
 						+ outEdge->getSinkNode().get()->getName());
+		 */
 		neighbors.push_back(outEdge->getSinkNode());
 	}
 	for (auto &inEdge : this->inEdges)
 	{
-		lazyInfo(__LINE__, __func__,
-				"Parent neighbor added: "
-						+ inEdge->getSourceNode().get()->getName());
+		/* TODO: Fix
+		*lazyInfo(__LINE__, __func__,
+		*		"Parent neighbor added: "
+		*				+ inEdge->getSourceNode().get()->getName());
+		*/
 		neighbors.push_back(inEdge->getSourceNode());
 	}
 	return neighbors;
@@ -672,7 +676,7 @@ void Node<T>::deleteAllEdges()
 	//we just travers to the source of our edge then delete the outer edge
 	for (auto &inEdge : this->inEdges)
 		inEdge->getSourceNode().get()->deleteOutEdge(inEdge);
-	if ((this->inEdges.size() != 0) && (this->outEdges.size != 0))
+	if ((this->inEdges.size() != 0) && (this->outEdges.size() != 0))
 		badBehavior(__LINE__, __func__);
 }
 
@@ -813,13 +817,22 @@ void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 		this->inEdges.erase(
 				std::remove(this->inEdges.begin(), this->inEdges.end(),
 						inEdgeToDelete), this->inEdges.end());
-		lazyInfo(__LINE__, __func__,
+		std::cout << "In edge to" + this->getName() + " deleted"<< std::endl;
+		/* TODO:Fix
+		 * lazyInfo(__LINE__, __func__,
 				"inEdge to " + this->getName() + " deleted");
+		 *
+		 *
+		 */
 	}
 	else if (this->hasOutEdge(inEdgeToDelete))
 	{
-		lazyInfo(__LINE__, __func__,
+		/*TODO: Fix
+		 * lazyInfo(__LINE__, __func__,
 				"In edge was actually an out edge of node " + this->getName());
+		 *
+		 */
+		std::cout << "In edge was actually out" << std::endl;
 	}
 	else
 		badBehavior(__LINE__, __func__);
@@ -841,7 +854,7 @@ void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
 	if (this->hasOutEdge(outEdgeToDelete))
 	{
 		//as of now let us just delete the value using index, worst case O(N) but thing is we at most have ~5 bonds in our use case
-		for (int currIndex = 0; currIndex < this->outEdges.size(); currIndex++)
+		for (unsigned int currIndex = 0; currIndex < this->outEdges.size(); currIndex++)
 		{
 			if (this->outEdges[currIndex].get() == outEdgeToDelete)
 			{
@@ -849,15 +862,21 @@ void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
 				outEdgeToDelete->getSinkNode().get()->deleteInEdge(
 						outEdgeToDelete);
 				this->outEdges.erase(this->outEdges.begin() + currIndex);
-				lazyInfo(__LINE__, __func__,
+				/*TODO: Fix
+				 * lazyInfo(__LINE__, __func__,
 						"outEdge from " + this->getName() + " deleted");
+				 */
+				std::cout << "outEdge from " + this->getName() + " deleted" << std::endl;
 			}
 		}
 	}
 	else if (this->hasInEdge(outEdgeToDelete))
 	{
-		lazyInfo(__LINE__, __func__,
+		/*TODO: Fis
+		 * lazyInfo(__LINE__, __func__,
 				"Out edge was actually an in edge of node " + this->getName());
+		 */
+		std::cout << "Out edge was actually an in edge of node " + this->getName() << std::endl;
 	}
 	else
 		badBehavior(__LINE__, __func__);
@@ -933,7 +952,7 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T> > nodeB)
 		}
 		for (auto &inEdgeptr : nodeB.get()->inEdges)
 		{
-			if (inEdgeptr->getSourceNode().get() == &this) //will most likely need the node to know its own pointer smh, does this properly return address
+			if (inEdgeptr->getSourceNode().get() == this) //will most likely need the node to know its own pointer smh, does this properly return address
 				return inEdgeptr;
 		}
 	}
