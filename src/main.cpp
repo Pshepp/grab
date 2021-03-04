@@ -31,20 +31,20 @@ class Atom
 	public:
 	Atom(std::string name) : atomName (name)
 	{
-		atomNodePtr = std::make_shared<Node<Atom>>(this, name);
+		atomNodePtr = std::make_shared<Node<Atom>>(name);
 	}
 	void addBond(Atom *otherAtom)
 	{
-		atomNodePtr->addNeighbor(otherAtom->getNode(), this->getName()+"->"+otherAtom->getName());
+		this->atomNodePtr.get()->addNeighbor(otherAtom->getNode(), this->getName() + "->" + otherAtom->getName());
 	}
 	void removeBond(Atom *otherAtom)
 	{
 		atomNodePtr->deleteEdge(otherAtom->getNode());
 	}
-	std::vector<std::shared_ptr<Atom>> getNeighbors()
-		{
-		return this->getNode()->getNeighbors();
-		}
+	//std::vector<std::shared_ptr<Atom>> getNeighbors()
+	//	{
+	//	return this->getNode()->getNeighbors();
+	//	}
 	const std::shared_ptr<Node<Atom>> getNode()
 		{
 		return atomNodePtr;
@@ -60,11 +60,12 @@ class Atom
 
 int main()
 {
-	Atom * atom0 = new Atom("my");
+	Atom  * atom0 = new Atom("my");
 	Atom * atom1 = new Atom("name");
-	Atom * atom2 = new Atom("jeff");
 
-	atom0->addBond(atom2);
+	atom0->addBond(atom1);
+	atom0->removeBond(atom1);
+
 
 
 	std::cout << "Yes this is our main lole" << std::endl;

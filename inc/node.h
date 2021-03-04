@@ -49,6 +49,7 @@
 
 //cannot use forward declare due to creating our edges within our node class
 #include "edge.h"
+#include "lazyPrints.h"
 
 template<class T>
 class Node: public std::enable_shared_from_this<Node<T>>
@@ -64,6 +65,7 @@ public:
 		this->setIsLeaf(false);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
+		lazyInfo(__LINE__, __func__, "Default Node Constructor");
 	}
 
 	//do we actually need an internal pointer to the object? Why not just use [OBJ].get() or something of the same?
@@ -74,6 +76,7 @@ public:
 		this->setIsLeaf(false);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
+		lazyInfo(__LINE__, __func__, "Node Constructor taking in a Name");
 	}
 
 	// To properly remove a node we are mostly worried about dangling pointers, will be taken care in our "deleteAllEdges()" member. Must think regarding edge cases.
@@ -81,10 +84,8 @@ public:
 	{
 		this->deleteAllEdges();
 		// TODO: REMOVE
-		std::cout << "Node Name: " << this->getName() << " removed"
-				<< std::endl;
-		std::cout << "Node Index: " << this->getIndex() << " removed"
-				<< std::endl;
+		std::string nodeInfo = "\t\tNode Name: " + this->getName() + " removed" +"\n\t\tNode Index: " + std::to_string(this->getIndex()) + " removed\n";
+		lazyInfo(__LINE__, __func__, "Node Destructor: \n" + nodeInfo);
 	}
 
 	/************************************************
@@ -193,8 +194,6 @@ private:
 	/************************************************
 	 *  HELPER FUNCTIONS
 	 ***********************************************/
-
-	void badBehavior(int lineBroke, const char *funcNameBroke);
 
 	void deleteInEdge(Edge<T> *inEdgeToDelete);
 	void deleteOutEdge(Edge<T> *outEdgeToDelete); //should be fine not having to get our unique ptr, we are working only within scope of class, possibly incorrect
@@ -531,7 +530,9 @@ template<class T>
 bool Node<T>::isParent(std::shared_ptr<Node<T>> possibleChild)
 {
 	//lazy switch, just check if our child is actually a child of the calling node.
-	return possibleChild.get()->isChild(this);
+	return possibleChild.get()->isChild(this->shared_from_this());
+
+//cannot convert ‘Node<Atom>*’ to ‘std::shared_ptr<Node<Atom> >’
 }
 
 /**
@@ -622,10 +623,10 @@ template<class T>
 void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd,
 		std::string edgeName)
 {
-	Edge<T> *newRawEdge = new Edge<T>(edgeName, this, neighborToAdd);
-	std::unique_ptr<Edge<T>> newUniqueEdge(newRawEdge);
-	neighborToAdd.get()->inEdges.push_back(newRawEdge);
-	this->outEdges.push_back(newUniqueEdge);
+	Edge<T>* freshEdge = new Edge<T>(edgeName, this->shared_from_this(), neighborToAdd);
+ 	std::unique_ptr<Edge<T>> newUniqueEdge(freshEdge);
+	neighborToAdd.get()->inEdges.push_back(freshEdge);
+	this->outEdges.push_back(std::move(newUniqueEdge));
 }
 
 //TODO: Is there really a need for this? Honestly IMO no, we would want to delete a node/neighbor from our graph structure class
@@ -960,26 +961,5 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T> > nodeB)
 	return NULL;
 }
 
-//LAZY ERROR USE FOLLOWING TO CALL badBehavior(__LINE__, __func__);
-template<class T>
-void Node<T>::badBehavior(int lineBroke, const char *funcNameBroke)
-{
-	std::cout << "****************************************" << std::endl
-			<< "\tBORKED" << "****************************************"
-			<< std::endl;
-	std::cout << "Borked Function Name: " << funcNameBroke << std::endl;
-	std::cout << "Line Number: " << lineBroke << std::endl << std::endl;
-}
-
-//LAZY INFORMATION OUTPUT
-void lazyInfo(int lineCalled, const char *funcName, std::string infoToPass)
-{
-	std::cout << "****************************************" << std::endl
-			<< "\tINFO" << "****************************************"
-			<< std::endl;
-	std::cout << "Info Function Name: " << funcName << std::endl;
-	std::cout << "Msg: " << infoToPass;
-	std::cout << "Line Number: " << lineCalled << std::endl << std::endl;
-}
 #endif /* INC_NODE_H_ */
 

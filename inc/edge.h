@@ -25,6 +25,10 @@
 #include <string>
 #include <memory>
 
+
+#include "lazyPrints.h"
+
+
 //may need to bite the bullet and just to a full include of the header
 template<class T> class Node;
 
@@ -51,16 +55,17 @@ public:
 		this->setIndex(1);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
-		this->sourceNode = std::make_shared<Node<T>>(sourceNode);
-		this->sinkNode = std::make_shared<Node<T>>(sinkNode);
+		this->sourceNode = (sourceNode);
+		this->sinkNode = (sinkNode);
+		std::cout << "Creating Edge: " << this->getName() << std::endl;
 	}
 
 	//From my understanding, the unique_ptr that owns our edge will be what is deleted, and that will automatically take care of our shared ptrs
 	~Edge()
 	{
 		// TODO: REMOVE
-		std::cout << "REMOVING Edge Name: " << this->getName() << std::endl;
-		std::cout << "REMOVING Edge Index: " << this->getIndex() << std::endl;
+		std::string edgeInfo = "\tEdge Name: " + this->getName() +"\n\tEdge Index: " + std::to_string(this->getIndex())+"\n";
+		lazyInfo(__LINE__, __func__, "Edge Destructor: \n" + edgeInfo);
 	}
 
 	/************************************************
