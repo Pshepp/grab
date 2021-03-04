@@ -81,9 +81,9 @@ public:
 	{
 		this->deleteAllEdges();
 		// TODO: REMOVE
-		std::cout << "Node Name: " << this->getName() << "\ removed"
+		std::cout << "Node Name: " << this->getName() << " removed"
 				<< std::endl;
-		std::cout << "Node Index: " << this->getIndex() << "\ removed"
+		std::cout << "Node Index: " << this->getIndex() << " removed"
 				<< std::endl;
 	}
 
@@ -193,6 +193,9 @@ private:
 	/************************************************
 	 *  HELPER FUNCTIONS
 	 ***********************************************/
+
+	void badBehavior(int lineBroke, const char *funcNameBroke);
+
 	void deleteInEdge(Edge<T> *inEdgeToDelete);
 	void deleteOutEdge(Edge<T> *outEdgeToDelete); //should be fine not having to get our unique ptr, we are working only within scope of class, possibly incorrect
 
@@ -406,7 +409,7 @@ std::shared_ptr<Node<T> > Node<T>::getNeighborByName(std::string name)
 		}
 	}
 	badBehavior(__LINE__, __func__);
-	return null;
+	return NULL;
 }
 
 /**
@@ -432,7 +435,7 @@ std::shared_ptr<Node<T> > Node<T>::getNeighborByIndex(unsigned short index)
 		}
 	}
 	badBehavior(__LINE__, __func__);
-	return null;
+	return NULL;
 }
 
 /**
@@ -617,7 +620,7 @@ void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd,
 {
 	Edge<T> *newRawEdge = new Edge<T>(edgeName, this, neighborToAdd);
 	std::unique_ptr<Edge<T>> newUniqueEdge(newRawEdge);
-	neighborToAdd.get()->inEdges.push_back(newEdge);
+	neighborToAdd.get()->inEdges.push_back(newRawEdge);
 	this->outEdges.push_back(newUniqueEdge);
 }
 
@@ -923,10 +926,10 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T> > nodeB)
 {
 	if (this->isNeighbor(nodeB))
 	{
-		for (auto &inEdgeptr : this->inEdges)
+		for (auto &inEdgePtr : this->inEdges)
 		{
 			if (inEdgePtr->getSourceNode().get() == nodeB.get())
-				return inEdgeptr;
+				return inEdgePtr;
 		}
 		for (auto &inEdgeptr : nodeB.get()->inEdges)
 		{
@@ -935,11 +938,12 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T> > nodeB)
 		}
 	}
 	badBehavior(__LINE__, __func__);
-	return null;
+	return NULL;
 }
 
 //LAZY ERROR USE FOLLOWING TO CALL badBehavior(__LINE__, __func__);
-void badBehavior(int lineBroke, const char *funcNameBroke)
+template<class T>
+void Node<T>::badBehavior(int lineBroke, const char *funcNameBroke)
 {
 	std::cout << "****************************************" << std::endl
 			<< "\tBORKED" << "****************************************"

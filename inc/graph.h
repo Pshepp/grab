@@ -77,6 +77,8 @@ private:
 	//TODO: Keep us from having dupes
 	std::vector<std::shared_ptr<Node<T>>> nodesWithin;
 
+	void badBehavior(int lineBroke, const char *funcNameBroke);
+
 };
 
 /************************************************
@@ -209,7 +211,8 @@ void Graph<T>::deleteNode(std::shared_ptr<Node<T> > nodeToDelete)
 }
 
 //LAZY ERROR USE FOLLOWING TO CALL badBehavior(__LINE__, __func__);
-void badBehavior(int lineBroke, const char *funcNameBroke)
+template<class T>
+void Graph<T>::badBehavior(int lineBroke, const char *funcNameBroke)
 {
 	std::cout << "****************************************" << std::endl
 			<< "\tBORKED" << "****************************************"

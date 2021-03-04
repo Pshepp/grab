@@ -51,8 +51,8 @@ public:
 		this->setIndex(1);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
-		this->sourceNode = make_shared<Node<T>>(sourceNode);
-		this->sinkNode = make_shared<Node<T>>(sinkNode);
+		this->sourceNode = std::make_shared<Node<T>>(sourceNode);
+		this->sinkNode = std::make_shared<Node<T>>(sinkNode);
 	}
 
 	//From my understanding, the unique_ptr that owns our edge will be what is deleted, and that will automatically take care of our shared ptrs
