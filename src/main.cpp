@@ -16,58 +16,104 @@
  * 				classes
  * 			- Implement our nodes being owned by a graph structure.
  * 			- FIX SET INDEX!! Proper index tracking for all of our nodes and edges
+ * 			- Switch our vectors to maps
+ * 			- Valgrind & integration into CI/CD -> ask godfrey regarding this
  *
  */
 
-
-
 #include <iostream>
+#include <memory>
 #include "../inc/graph.h"
 #include "../inc/node.h"
 #include "../inc/edge.h"
 
 class Atom
 {
-	public:
-	Atom(std::string name) : atomName (name)
+public:
+	Atom(std::string name) :
+			atomName(name)
 	{
 		atomNodePtr = std::make_shared<Node<Atom>>(name);
 	}
 	void addBond(Atom *otherAtom)
 	{
-		this->atomNodePtr.get()->addNeighbor(otherAtom->getNode(), this->getName() + "->" + otherAtom->getName());
+		this->atomNodePtr.get()->addNeighbor(otherAtom->getNode(),
+				this->getName() + "->" + otherAtom->getName());
 	}
 	void removeBond(Atom *otherAtom)
 	{
 		atomNodePtr->deleteEdge(otherAtom->getNode());
+	}
+	void printBonds()
+	{
+		lazyInfo(__LINE__, __func__, "Node " + this->getName() + " bonds");
+		std::vector<std::shared_ptr<Node<Atom>>> neighbors =
+				this->getNode().get()->getNeighbors();
+		for (auto &atom : neighbors)
+		{
+			std::cout << atom.get()->getName() + ", ";
+		}
+		std::cout << std::endl << std::endl;
 	}
 	//std::vector<std::shared_ptr<Atom>> getNeighbors()
 	//	{
 	//	return this->getNode()->getNeighbors();
 	//	}
 	const std::shared_ptr<Node<Atom>> getNode()
-		{
+	{
 		return atomNodePtr;
-		}
+	}
 	std::string getName()
 	{
 		return atomName;
 	}
-	private:
+private:
 	std::shared_ptr<Node<Atom>> atomNodePtr;
 	std::string atomName;
 };
 
 int main()
 {
-	Atom  * atom0 = new Atom("my");
-	Atom * atom1 = new Atom("name");
+	Atom *atom0 = new Atom("my");
+	Atom *atom1 = new Atom("name");
+	Atom *atom2 = new Atom("jeff");
+	atom0->addBond(atom1);
+	atom1->addBond(atom2);
+	atom2->addBond(atom0);
+
+	Atom *atom3 = new Atom("Bobie");
+	Atom *atom4 = new Atom("Steve");
+	Atom *atom5 = new Atom("Ronne");
+	Atom *atom6 = new Atom("Bingo");
+	Atom *atom7 = new Atom("Marsh");
+	Atom *atom8 = new Atom("Delux");
+
 
 	atom0->addBond(atom1);
-	atom0->removeBond(atom1);
+	atom1->addBond(atom2);
+	atom2->addBond(atom3);
+	atom3->addBond(atom4);
+	atom4->addBond(atom5);
+	atom1->addBond(atom6);
+	atom5->addBond(atom6);
+	atom2->addBond(atom5);
+	atom2->addBond(atom6);
+	atom5->addBond(atom3);
+	atom2->addBond(atom7);
+	atom7->addBond(atom8);
 
+	//atom0->printBonds();
+	//atom1->printBonds();
+	//atom2->printBonds();
 
+	atom6->printBonds();
+	delete atom6->getNode().get();
+	//atom0->removeBond(atom1);
+
+	//atom0->printBonds();
+	//atom1->printBonds();
+	//atom2->printBonds();
 
 	std::cout << "Yes this is our main lole" << std::endl;
-			return 0;
+	return 0;
 }

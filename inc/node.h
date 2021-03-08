@@ -1,3 +1,7 @@
+/* IMPROPER UNIQUE_PTR RELEASE WHEN DELETING
+ *
+ */
+
 /**
  * @file node.h
  * @author Preston Sheppard
@@ -39,6 +43,8 @@
 #ifndef INC_NODE_H_
 #define INC_NODE_H_
 
+const bool nodeDebug = false;
+
 // TODO: REMOVE AFTER BUG TESTING
 #include <iostream>
 
@@ -65,7 +71,8 @@ public:
 		this->setIsLeaf(false);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
-		lazyInfo(__LINE__, __func__, "Default Node Constructor");
+		if (nodeDebug)
+			lazyInfo(__LINE__, __func__, "Default Node Constructor");
 	}
 
 	//do we actually need an internal pointer to the object? Why not just use [OBJ].get() or something of the same?
@@ -76,16 +83,22 @@ public:
 		this->setIsLeaf(false);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
-		lazyInfo(__LINE__, __func__, "Node Constructor taking in a Name");
+		if (nodeDebug)
+			lazyInfo(__LINE__, __func__, "Node Constructor taking in a Name");
 	}
 
 	// To properly remove a node we are mostly worried about dangling pointers, will be taken care in our "deleteAllEdges()" member. Must think regarding edge cases.
 	~Node()
 	{
+		arraysBorkCheck();
 		this->deleteAllEdges();
-		// TODO: REMOVE
-		std::string nodeInfo = "\t\tNode Name: " + this->getName() + " removed" +"\n\t\tNode Index: " + std::to_string(this->getIndex()) + " removed\n";
-		lazyInfo(__LINE__, __func__, "Node Destructor: \n" + nodeInfo);
+		if (true)
+		{
+			std::string nodeInfo = "\t\tNode Name: " + this->getName()
+					+ " removed" + "\n\t\tNode Index: "
+					+ std::to_string(this->getIndex()) + " removed\n";
+			lazyInfo(__LINE__, __func__, "Node Destructor: \n" + nodeInfo);
+		}
 	}
 
 	/************************************************
@@ -159,6 +172,13 @@ public:
 	bool containsLabel(std::vector<std::string> labelToCheck);
 
 private:
+	//TODO: check out size of ish because getting bad alloc
+	void arraysBorkCheck()
+	{
+		std::cout << "In Edges size: " << this->inEdges.size() << std::endl;
+		std::cout << "Out Edges size:" << this->outEdges.size() << std::endl;
+	}
+
 	/************************************************
 	 *  IDENTIFIERS
 	 ***********************************************/
@@ -401,9 +421,10 @@ std::shared_ptr<Node<T> > Node<T>::getNeighborByName(std::string name)
 	{
 		if (possibleHit.get()->getName() == name)
 		{
-			lazyInfo(__LINE__, __func__,
-					"Found Neighbor of " + this->getName() + " with name :"
-							+ name);
+			if (nodeDebug)
+				lazyInfo(__LINE__, __func__,
+						"Found Neighbor of " + this->getName() + " with name :"
+								+ name);
 			return possibleHit;
 		}
 	}
@@ -427,9 +448,10 @@ std::shared_ptr<Node<T> > Node<T>::getNeighborByIndex(unsigned short index)
 	{
 		if (possibleHit.get()->getIndex() == index)
 		{
-			lazyInfo(__LINE__, __func__,
-					"Found Neighbor of " + this->getName() + " with index :"
-							+ index);
+			if (nodeDebug)
+				lazyInfo(__LINE__, __func__,
+						"Found Neighbor of " + this->getName() + " with index :"
+								+ index);
 			return possibleHit;
 		}
 	}
@@ -452,20 +474,18 @@ std::vector<std::shared_ptr<Node<T> > > Node<T>::getNeighbors()
 	//get children
 	for (auto &&outEdge : this->outEdges)
 	{
-		/* TODO: Fix
-		 * lazyInfo(__LINE__, __func__,
-				"Child neighbor added: "
-						+ outEdge->getSinkNode().get()->getName());
-		 */
+		if (nodeDebug)
+			lazyInfo(__LINE__, __func__,
+					"Child neighbor added: "
+							+ outEdge->getSinkNode().get()->getName());
 		neighbors.push_back(outEdge->getSinkNode());
 	}
 	for (auto &inEdge : this->inEdges)
 	{
-		/* TODO: Fix
-		*lazyInfo(__LINE__, __func__,
-		*		"Parent neighbor added: "
-		*				+ inEdge->getSourceNode().get()->getName());
-		*/
+		if (nodeDebug)
+			lazyInfo(__LINE__, __func__,
+					"Parent neighbor added: "
+							+ inEdge->getSourceNode().get()->getName());
 		neighbors.push_back(inEdge->getSourceNode());
 	}
 	return neighbors;
@@ -510,7 +530,13 @@ bool Node<T>::isChild(std::shared_ptr<Node<T>> possibleParent)
 	{
 		//ensures that both of our shared ptrs go to same obj. What if null?
 		if (inEdgePtr->getSourceNode().get() == possibleParent.get())
+		{
+			if (nodeDebug)
+				lazyInfo(__LINE__, __func__,
+						this->getName() + " is child of "
+								+ possibleParent->getName());
 			return true;
+		}
 	}
 	return false;
 }
@@ -530,6 +556,10 @@ template<class T>
 bool Node<T>::isParent(std::shared_ptr<Node<T>> possibleChild)
 {
 	//lazy switch, just check if our child is actually a child of the calling node.
+	if (nodeDebug)
+		lazyInfo(__LINE__, __func__,
+				"Checking if " + this->getName() + " is parent of "
+						+ possibleChild->getName());
 	return possibleChild.get()->isChild(this->shared_from_this());
 
 //cannot convert ‘Node<Atom>*’ to ‘std::shared_ptr<Node<Atom> >’
@@ -623,8 +653,9 @@ template<class T>
 void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd,
 		std::string edgeName)
 {
-	Edge<T>* freshEdge = new Edge<T>(edgeName, this->shared_from_this(), neighborToAdd);
- 	std::unique_ptr<Edge<T>> newUniqueEdge(freshEdge);
+	Edge<T> *freshEdge = new Edge<T>(edgeName, this->shared_from_this(),
+			neighborToAdd);
+	std::unique_ptr<Edge<T>> newUniqueEdge(freshEdge);
 	neighborToAdd.get()->inEdges.push_back(freshEdge);
 	this->outEdges.push_back(std::move(newUniqueEdge));
 }
@@ -654,12 +685,14 @@ void Node<T>::deleteEdge(std::shared_ptr<Node<T> > secondNode)
 		badBehavior(__LINE__, __func__);
 		return;
 	}
-	//this->getConnectingEdge(secondNode)->get().sourceNode();;
+	arraysBorkCheck();
 	Edge<T> *tempLazy = this->getConnectingEdge(secondNode);
+	lazyInfo(__LINE__, __func__,
+			"Edge connecting (" + this->getName() + ") to ("
+					+ secondNode->getName() + ") to be deleted");
 	tempLazy->getSourceNode().get()->deleteOutEdge(tempLazy);
-	//check, now we want them to not be neighbors
 	if (this->isNeighbor(secondNode))
-		badBehavior(__LINE__, __func__);
+		badBehavior(__LINE__, __func__, "EDGES ARE STILL NEIGHBORS");
 }
 
 /**
@@ -671,7 +704,13 @@ void Node<T>::deleteEdge(std::shared_ptr<Node<T> > secondNode)
 template<class T>
 void Node<T>::deleteAllEdges()
 {
+	/* TODO: THE LOOPING THROUGH CAUSES DEATH, RECALL IT CHANGES OUR INDICIES. NEED TO ACTUALLY USE ITERATOR
+	 *
+	 */
+	lazyInfo(__LINE__, __func__,
+			"Delting all edges of node: " + this->getName());
 	//Warning O(N^2), could be worse if we worry about the internal loops we begin calling
+	arraysBorkCheck();
 	for (auto &&outEdge : this->outEdges)
 		this->deleteOutEdge(outEdge.get());
 	//we just travers to the source of our edge then delete the outer edge
@@ -813,27 +852,25 @@ void Node<T>::switchEdgeDirection(std::shared_ptr<Node<T> > nodeB)
 template<class T>
 void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 {
+	arraysBorkCheck();
 	if (hasInEdge(inEdgeToDelete))
 	{
 		this->inEdges.erase(
 				std::remove(this->inEdges.begin(), this->inEdges.end(),
 						inEdgeToDelete), this->inEdges.end());
-		std::cout << "In edge to" + this->getName() + " deleted"<< std::endl;
-		/* TODO:Fix
-		 * lazyInfo(__LINE__, __func__,
-				"inEdge to " + this->getName() + " deleted");
-		 *
-		 *
-		 */
+
+		lazyInfo(__LINE__, __func__, "Edge TO " + this->getName() + " deleted");
+		arraysBorkCheck();
 	}
 	else if (this->hasOutEdge(inEdgeToDelete))
 	{
-		/*TODO: Fix
-		 * lazyInfo(__LINE__, __func__,
-				"In edge was actually an out edge of node " + this->getName());
-		 *
-		 */
-		std::cout << "In edge was actually out" << std::endl;
+		lazyInfo(__LINE__, __func__,
+				"*** In edge was actually an out edge of node "
+						+ this->getName());
+	}
+	else if (this->inEdges.size() == 0)
+	{
+		lazyInfo(__LINE__, __func__, "Yo no edges here bro");
 	}
 	else
 		badBehavior(__LINE__, __func__);
@@ -852,10 +889,13 @@ void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 template<class T>
 void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
 {
+	lazyInfo(__LINE__, __func__, "Entering into delete out edge");
+	arraysBorkCheck();
 	if (this->hasOutEdge(outEdgeToDelete))
 	{
 		//as of now let us just delete the value using index, worst case O(N) but thing is we at most have ~5 bonds in our use case
-		for (unsigned int currIndex = 0; currIndex < this->outEdges.size(); currIndex++)
+		for (unsigned int currIndex = 0; currIndex < this->outEdges.size();
+				currIndex++)
 		{
 			if (this->outEdges[currIndex].get() == outEdgeToDelete)
 			{
@@ -863,24 +903,41 @@ void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
 				outEdgeToDelete->getSinkNode().get()->deleteInEdge(
 						outEdgeToDelete);
 				this->outEdges.erase(this->outEdges.begin() + currIndex);
-				/*TODO: Fix
-				 * lazyInfo(__LINE__, __func__,
-						"outEdge from " + this->getName() + " deleted");
-				 */
-				std::cout << "outEdge from " + this->getName() + " deleted" << std::endl;
+				lazyInfo(__LINE__, __func__,
+						"Edge FROM " + this->getName() + " deleted");
 			}
 		}
 	}
 	else if (this->hasInEdge(outEdgeToDelete))
 	{
-		/*TODO: Fis
-		 * lazyInfo(__LINE__, __func__,
-				"Out edge was actually an in edge of node " + this->getName());
-		 */
-		std::cout << "Out edge was actually an in edge of node " + this->getName() << std::endl;
+		lazyInfo(__LINE__, __func__,
+				"*** Out edge was actually an in edge of node "
+						+ this->getName());
+	}
+	else if (this->outEdges.size() == 0 || this->inEdges.size() == 0)
+	{
+		lazyInfo(__LINE__, __func__, "Yo no edges here bro");
 	}
 	else
+	{
+		std::cout << "=================== EDGE CHECK =============="
+				<< std::endl;
+		for (Edge<T> *ed : this->inEdges)
+		{
+			std::cout << ed->getName() << ", ";
+		}
+		std::cout << "\n";
+
+		for (int i = 0; i < this->inEdges.size(); i++)
+		{
+			std::cout << this->inEdges[i]->getName() << ", ";
+		}
+		std::cout << "\n";
+
+		//todo: what are the values within our vector
+		arraysBorkCheck();
 		badBehavior(__LINE__, __func__);
+	}
 }
 
 /**
@@ -949,12 +1006,32 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T> > nodeB)
 		for (auto &inEdgePtr : this->inEdges)
 		{
 			if (inEdgePtr->getSourceNode().get() == nodeB.get())
+			{
+				std::string blurb = "Found Edge connecting " + nodeB->getName()
+						+ " TO " + this->getName() + "\n";
+				std::string vis = "\tVisualize: " + nodeB->getName() + " --("
+						+ inEdgePtr->getName() + ")-> " + this->getName();
+				lazyInfo(__LINE__, __func__,
+						"Found Edge\n\t"
+								+ inEdgePtr->getSourceNode().get()->getName());
 				return inEdgePtr;
+			}
+
 		}
-		for (auto &inEdgeptr : nodeB.get()->inEdges)
+		for (auto &inEdgePtr : nodeB.get()->inEdges)
 		{
-			if (inEdgeptr->getSourceNode().get() == this) //will most likely need the node to know its own pointer smh, does this properly return address
-				return inEdgeptr;
+			if (inEdgePtr->getSourceNode().get() == this) //will most likely need the node to know its own pointer smh, does this properly return address
+			{
+				std::string blurb = "Found Edge connecting " + this->getName()
+						+ " TO " + nodeB.get()->getName() + "\n";
+				std::string vis = "\tVisualize: " + this->getName() + " --("
+						+ inEdgePtr->getName() + ")-> " + nodeB->getName();
+				lazyInfo(__LINE__, __func__, blurb + vis);
+				//""
+				//"\n\t" + inEdgePtr->getSourceNode().get()->getName());
+				return inEdgePtr;
+			}
+
 		}
 	}
 	badBehavior(__LINE__, __func__);

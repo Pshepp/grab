@@ -18,6 +18,7 @@
 #ifndef INC_EDGE_H_
 #define INC_EDGE_H_
 
+const bool edgeDebug = false;
 // TODO: REMOVE AFTER BUG TESTING
 #include <iostream>
 
@@ -25,9 +26,7 @@
 #include <string>
 #include <memory>
 
-
 #include "lazyPrints.h"
-
 
 //may need to bite the bullet and just to a full include of the header
 template<class T> class Node;
@@ -46,6 +45,7 @@ public:
 		this->setIndex(1);
 		this->setIsBridge(false);
 		this->setIsVisited(false);
+		badBehavior(__LINE__, __func__);
 	}
 
 	Edge(std::string name, std::shared_ptr<Node<T>> sourceNode,
@@ -57,15 +57,23 @@ public:
 		this->setIsVisited(false);
 		this->sourceNode = (sourceNode);
 		this->sinkNode = (sinkNode);
-		std::cout << "Creating Edge: " << this->getName() << std::endl;
-	}
+		//parent on left
+		if (edgeDebug){
+		std::string edgeConnections = "\tVisualize: "+ sourceNode->getName() + " --(" + this->getName() + ")-> " + sinkNode->getName();
+
+		lazyInfo(__LINE__, __func__, "Edge Constructor\n" + edgeConnections);
+		}
+		}
 
 	//From my understanding, the unique_ptr that owns our edge will be what is deleted, and that will automatically take care of our shared ptrs
 	~Edge()
 	{
 		// TODO: REMOVE
-		std::string edgeInfo = "\tEdge Name: " + this->getName() +"\n\tEdge Index: " + std::to_string(this->getIndex())+"\n";
-		lazyInfo(__LINE__, __func__, "Edge Destructor: \n" + edgeInfo);
+		if (edgeDebug){
+		std::string edgeInfo = "\tEdge Name: " + this->getName()
+				+ "\n\tEdge Index: " + std::to_string(this->getIndex());
+		lazyInfo(__LINE__, __func__, "Edge Destructor\n" + edgeInfo);
+		}
 	}
 
 	/************************************************
