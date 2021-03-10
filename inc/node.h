@@ -525,6 +525,7 @@ bool Node<T>::isNeighbor(std::shared_ptr<Node<T>> possibleNeighbor)
 	/* Eventually use this, currently done a different way to keep track on input
 	 * return (this->isChild(possibleNeighbor) ^ this->isNeighbor(possibleNeighbor));
 	 */
+	//fails for cycle
 	bool verboseIsChild = this->isChild(possibleNeighbor);
 	bool verboseIsParent = this->isParent(possibleNeighbor);
 	if (nodeDebug)
@@ -546,7 +547,7 @@ bool Node<T>::isNeighbor(std::shared_ptr<Node<T>> possibleNeighbor)
 		}
 		lazyInfo(__LINE__, __func__, isNeighborMsg);
 	}
-	return (verboseIsChild ^ verboseIsParent);
+	return (verboseIsChild || verboseIsParent);
 }
 
 /* Checks if our calling node is a child of input, i.e. possible parent owns our edge
@@ -672,12 +673,12 @@ template<class T>
 void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd,
 		std::string edgeName)
 {
-	if (this->isNeighbor(neighborToAdd))
+	/*if (this->isNeighbor(neighborToAdd))
 	{
 		badBehavior(__LINE__, __func__, "Warning, already neighbors!");
 		return;
-	}
-	else if (this == neighborToAdd.get())
+	}*/
+	if (this == neighborToAdd.get())
 	{
 		badBehavior(__LINE__, __func__,
 				"Warning, trying to add self as neighbor!");
@@ -687,7 +688,10 @@ void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd,
 			std::make_unique<Edge<T>>(edgeName, this->shared_from_this(),
 					neighborToAdd));
 	neighborToAdd.get()->inEdges.push_back(this->outEdges.back().get());
-
+	std::cout << "$$$$$$EDGE CHECK OF CALLING NODE\n";
+	edgeCheck();
+	std::cout << "$$$$$$EDGE CHECK OF CALLEE NODE\n";
+	neighborToAdd.get()->edgeCheck();
 }
 
 template<class T>

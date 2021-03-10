@@ -108,9 +108,12 @@ int main()
 	Atom *atom2 = new Atom("jeff");
 	atom0->addBond(atom1);
 	atom0->addBond(atom2);
+	atom2->addBond(atom0);
 	atom0->printBondedAtoms();
+	atom2->printBondedAtoms();
 	std::cout << "\n\n NOW DELETEEEEEEEEEEEEEEEEEEEEEE\n";
-	atom0->removeAllBondes();
+	//atom0->removeAllBondes();
+	atom0->removeBond(atom2);
 	//atom0->removeBond(atom1);
 	//atom0->removeBond(atom2);
 	//atom1->removeBond(atom0);
@@ -155,5 +158,7 @@ int main()
 	 */
 	std::cout << "Yes this is our main lole" << std::endl;
 	atom0->printBondedAtoms();
+	std::cout<<"djklasdjasklasjdklas"<<std::endl;
+	atom2->printBondedAtoms();
 	return 0;
 }
