@@ -44,6 +44,10 @@ public:
 	{
 		atomNodePtr->deleteEdge(otherAtom->getNode());
 	}
+	void removeAllBondes()
+	{
+		atomNodePtr->deleteAllEdges();
+	}
 	void printBondedAtoms()
 	{
 		std::vector<std::weak_ptr<Node<Atom>>> neighbors =
@@ -101,13 +105,16 @@ int main()
 
 	Atom *atom0 = new Atom("my");
 	Atom *atom1 = new Atom("name");
+	Atom *atom2 = new Atom("jeff");
 	atom0->addBond(atom1);
+	atom0->addBond(atom2);
 	atom0->printBondedAtoms();
 	std::cout << "\n\n NOW DELETEEEEEEEEEEEEEEEEEEEEEE\n";
-	atom0->removeBond(atom1);
-
+	atom0->removeAllBondes();
+	//atom0->removeBond(atom1);
+	//atom1->removeBond(atom0);
 	//atom0->printBonds();
-	/*Atom *atom2 = new Atom("jeff");
+	/*
 	 atom0->addBond(atom1);
 	 atom1->addBond(atom2);
 	 atom2->addBond(atom0);
