@@ -44,21 +44,45 @@ public:
 	{
 		atomNodePtr->deleteEdge(otherAtom->getNode());
 	}
-	void printBonds()
+	void printBondedAtoms()
 	{
-		lazyInfo(__LINE__, __func__, "Node " + this->getName() + " bonds");
-		std::vector<std::shared_ptr<Node<Atom>>> neighbors =
+		std::vector<std::weak_ptr<Node<Atom>>> neighbors =
 				this->getNode().get()->getNeighbors();
+		std::vector<std::string> atomNames;
+		std::vector<std::string> bondNames;
 		for (auto &atom : neighbors)
 		{
-			std::cout << atom.get()->getName() + ", ";
+			if (atom.lock())
+			{
+				std::shared_ptr<Node<Atom>> temp = atom.lock();
+				atomNames.push_back(temp->getName());
+				if (temp.get()->getConnectingEdge(this->getNode()) != NULL)
+				{
+					bondNames.push_back(temp.get()->getConnectingEdge(this->getNode())->getName());
+				}
+				else
+				{
+					badBehavior(__LINE__, __func__, "We couldnt find our connecting edge!!");
+				}
+			}
 		}
-		std::cout << std::endl << std::endl;
+		lazyInfo(__LINE__, __func__, "Printing bonded atoms to atom: " + this->getName());
+		std::cout <<"~~~Bonded Atom/Neighbor Names:" << std::endl;
+		for (auto& i : atomNames)
+		{
+			std::cout << i << std::endl;
+		}
+		std::cout<<"\n~~~The bonds between our atom and its neighbors:" <<std::endl;
+		for (auto& i : bondNames)
+		{
+			std::cout<<i<<std::endl;
+		}
+
+		std::cout << std::endl
+				<< "Finished printing bonded atoms for atom: " + this->getName()
+				<< std::endl;
 	}
-	//std::vector<std::shared_ptr<Atom>> getNeighbors()
-	//	{
-	//	return this->getNode()->getNeighbors();
-	//	}
+
 	const std::shared_ptr<Node<Atom>> getNode()
 	{
 		return atomNodePtr;
@@ -74,46 +98,54 @@ private:
 
 int main()
 {
+
 	Atom *atom0 = new Atom("my");
 	Atom *atom1 = new Atom("name");
-	Atom *atom2 = new Atom("jeff");
 	atom0->addBond(atom1);
-	atom1->addBond(atom2);
-	atom2->addBond(atom0);
-
-	Atom *atom3 = new Atom("Bobie");
-	Atom *atom4 = new Atom("Steve");
-	Atom *atom5 = new Atom("Ronne");
-	Atom *atom6 = new Atom("Bingo");
-	Atom *atom7 = new Atom("Marsh");
-	Atom *atom8 = new Atom("Delux");
-
-
-	atom0->addBond(atom1);
-	atom1->addBond(atom2);
-	atom2->addBond(atom3);
-	atom3->addBond(atom4);
-	atom4->addBond(atom5);
-	atom1->addBond(atom6);
-	atom5->addBond(atom6);
-	atom2->addBond(atom5);
-	atom2->addBond(atom6);
-	atom5->addBond(atom3);
-	atom2->addBond(atom7);
-	atom7->addBond(atom8);
+	atom0->printBondedAtoms();
+	std::cout << "\n\n NOW DELETEEEEEEEEEEEEEEEEEEEEEE\n";
+	atom0->removeBond(atom1);
 
 	//atom0->printBonds();
-	//atom1->printBonds();
-	//atom2->printBonds();
+	/*Atom *atom2 = new Atom("jeff");
+	 atom0->addBond(atom1);
+	 atom1->addBond(atom2);
+	 atom2->addBond(atom0);
 
-	atom6->printBonds();
-	delete atom6->getNode().get();
-	//atom0->removeBond(atom1);
+	 Atom *atom3 = new Atom("Bobie");
+	 Atom *atom4 = new Atom("Steve");
+	 Atom *atom5 = new Atom("Ronne");
+	 Atom *atom6 = new Atom("Bingo");
+	 Atom *atom7 = new Atom("Marsh");
+	 Atom *atom8 = new Atom("Delux");
 
-	//atom0->printBonds();
-	//atom1->printBonds();
-	//atom2->printBonds();
 
+	 atom0->addBond(atom1);
+	 atom1->addBond(atom2);
+	 atom2->addBond(atom3);
+	 atom3->addBond(atom4);
+	 atom4->addBond(atom5);
+	 atom1->addBond(atom6);
+	 atom5->addBond(atom6);
+	 atom2->addBond(atom5);
+	 atom2->addBond(atom6);
+	 atom5->addBond(atom3);
+	 atom2->addBond(atom7);
+	 atom7->addBond(atom8);
+
+	 //atom0->printBonds();
+	 //atom1->printBonds();
+	 //atom2->printBonds();
+
+	 atom6->printBonds();
+	 delete atom6->getNode().get();
+	 //atom0->removeBond(atom1);
+
+	 //atom0->printBonds();
+	 //atom1->printBonds();
+	 //atom2->printBonds();
+	 */
 	std::cout << "Yes this is our main lole" << std::endl;
+	atom0->printBondedAtoms();
 	return 0;
 }
