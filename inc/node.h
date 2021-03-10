@@ -721,10 +721,11 @@ void Node<T>::deleteEdge(std::shared_ptr<Node<T> > secondNode)
 
 }
 
-//TODO: Make more fragile to enforce checks
+//TODO: Make more fragile to enforce checks, could just get neighbors, get edges between, call delete on list of edges
 template<class T>
 void Node<T>::deleteAllEdges()
 {
+
 	/*
 	 * for (auto const &inEdge : this->inEdges)
 	{
@@ -732,26 +733,57 @@ void Node<T>::deleteAllEdges()
 			count++;
 	}
 	 */
+	std::vector<std::weak_ptr<Node<T>>> allNeighbors = this->getNeighbors();
+	for (auto& neigh : allNeighbors)
+	{
+		if (neigh.lock())
+		{
+			this->deleteEdge(neigh.lock());
+		}
+		else
+		{
+			badBehavior(__LINE__, __func__, "COULDNT LOCK DELETING ALL");
+		}
+	}
 	//deletes all the edges to our parents
 	lazyInfo(__LINE__, __func__, "Beginning");
 	edgeCheck();
-	for (auto const &inEdge: this->inEdges)
+
+	/*
+	std::cout << std::endl << "god have mercy seg faulting" <<std::endl;
+	for (auto &inEdge: this->inEdges)
 	{
+
 		//should be "this" node
 		inEdge->getSinkNode().get()->deleteInEdge(inEdge);
 		//should be "those" nodes
 		inEdge->getSourceNode().get()->deleteOutEdge(inEdge);
 	}
-	std::cout << "\n\After deleting in our edges for node: " << this->getName() <<std::endl;
+	std::cout << "\n\tAfter deleting in our edges for node: " << this->getName() <<std::endl;
 	edgeCheck();
 	//deletes all edges to our children
-	for (auto const &outEdge : this->outEdges)
+	//now gives a segfault
+	for (std::unique_ptr<Edge<T>> &outEdge : this->outEdges)
 	{
-		outEdge.get()->getSinkNode().get()->deleteInEdge(outEdge.get());
-		outEdge.get()->getSourceNode().get()->deleteOutEdge(outEdge.get());
+		//WARNING SEG FAULT
+		//trying to brute force
+		Edge<T>* tempEdge = outEdge.get();
+		std::cout << "EGHHH: " << tempEdge << std::endl;
+		std::cout << "EGHHH: " << tempEdge->getSourceNode().get() << std::endl;
+		std::cout << "EGHHH: " << tempEdge->getSinkNode().get() << std::endl<<std::endl;
+		tempEdge->getSinkNode().get()->deleteInEdge(tempEdge);
+		std::shared_ptr<Node<T>> tempSourceNode = tempEdge->getSourceNode();
+		//tempSourceNode.get()->deleteOutEdge(tempEdge);
+		//tempEdge->getSourceNode().get()->deleteOutEdge(tempEdge);
+		//outEdge.get()->getSinkNode().get()->deleteInEdge(outEdge.get());
+		//outEdge.get()->getSourceNode().get()->deleteOutEdge(outEdge.get());
+		//outEdge.get()->getSinkNode()
+		//outEdge.get()->getSinkNode().get()->deleteInEdge(outEdge.get());
+		//outEdge.get()->getSourceNode().get()->deleteOutEdge(outEdge.get());
 	}
-	std::cout << "\n\After deleting out our edges for node: " << this->getName() <<std::endl;
+	std::cout << "\n\tAfter deleting out our edges for node: " << this->getName() <<std::endl;
 	edgeCheck();
+	*/
 }
 
 template<class T>
@@ -777,7 +809,7 @@ void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 	//this->inEdges.erase(
 	//		std::remove(this->inEdges.begin(), this->inEdges.end(),
 	//				inEdgeToDelete), this->inEdges.end);
-	std::cout << "After removal\n";
+	std::cout << "After removal of in edges\n";
 	edgeCheck();
 }
 
@@ -818,7 +850,7 @@ void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
 	this->outEdges.erase(
 			std::remove(this->outEdges.begin(), this->outEdges.end(), nullptr),
 			this->outEdges.end());
-	std::cout << "After removal\n";
+	std::cout << "After removal of outEdge\n";
 	edgeCheck();
 }
 

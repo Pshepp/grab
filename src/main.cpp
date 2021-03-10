@@ -112,6 +112,7 @@ int main()
 	std::cout << "\n\n NOW DELETEEEEEEEEEEEEEEEEEEEEEE\n";
 	atom0->removeAllBondes();
 	//atom0->removeBond(atom1);
+	//atom0->removeBond(atom2);
 	//atom1->removeBond(atom0);
 	//atom0->printBonds();
 	/*
