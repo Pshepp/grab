@@ -330,8 +330,9 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T>> nodeB)
 	for (auto const &inEdge : nodeB.get()->inEdges)
 	{
 		//behaving as if our calling is a child, so we must get parent
-		if (inEdge->getSourceNode().get() == nodeB.get())
+		if (inEdge->getSourceNode().get() == this)
 		{
+			lazyInfo(__LINE__, __func__, "Found parent of calling node: " + this->getName());
 			count++;
 			ptrFromCalleeIn = inEdge;
 		}
@@ -347,6 +348,7 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T>> nodeB)
 	{
 		if (outEdge.get()->getSinkNode().get() == nodeB.get())
 		{
+			lazyInfo(__LINE__, __func__, "Found a child from calling node: " + this->getName());
 			count++;
 			ptrFromCallingOut = outEdge.get();
 		}
@@ -401,23 +403,12 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T>> nodeB)
  *
  *
  */
-
-
-
-
-
-
-
-
-
-
-
-
-
 	std::cout << std::endl << "AGGGGGGGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH" << ptrFromCalleeIn << std::endl;
-	//disgusting check to make sure edges are being nice
-	if ((ptrFromCallingIn == ptrFromCalleeOut)
-			&& (ptrFromCallingOut == ptrFromCalleeIn)
+	std::cout << std::endl << "CALLING IN: " << ptrFromCallingIn << std::endl <<"CALLING OUT: "<< ptrFromCallingOut  << std::endl<< "OKAY COOL";
+	std::cout  << std::endl << "CALLEE IN: " << ptrFromCalleeIn << std::endl << "CALLEE OUT: " << ptrFromCalleeOut <<std::endl;
+	//disgusting check to make sure edges are being nice, use xor to make sure only 1 is true
+	if (((ptrFromCallingIn == ptrFromCalleeOut)
+			|| (ptrFromCallingOut == ptrFromCalleeIn))
 			//ensure not all nulls
 			&& ((ptrFromCallingIn != NULL) || (ptrFromCallingOut != NULL))
 			//after making sure the pointers are related in the way they should be, we check for odd stuff. Making sure that our edge does not pt to self
@@ -426,25 +417,10 @@ Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T>> nodeB)
 			&& (ptrFromCallingIn != ptrFromCalleeIn)
 			&& (ptrFromCallingOut != ptrFromCalleeOut))
 	{
-		//this is waht we fail!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		/*
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 *
-		 */
-		return (ptrFromCallingIn == NULL) ? ptrFromCallingOut : ptrFromCallingIn;
+
+		Edge<T>* toRet = (ptrFromCallingIn == 0) ?  ptrFromCallingOut : ptrFromCallingIn;
+		std::cout << std::endl << std::endl << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << std::endl << toRet <<std::endl <<"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"<<std::endl;
+		return toRet;
 	}
 	else
 	{
