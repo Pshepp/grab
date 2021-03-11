@@ -15,6 +15,13 @@
 
 std::string starLine = "****************************************\n";
 //LAZY INFORMATION OUTPUT
+void lazyInfo(int lineCalled, const char *funcName)
+{
+	std::cout << starLine << "\tINFORMATION: " << funcName << "\n" << starLine;
+	std::cout << "Function Name: " << funcName << std::endl;
+	std::cout << "Line Number: " << lineCalled << std::endl;
+}
+//LAZY INFORMATION OUTPUT
 void lazyInfo(int lineCalled, const char *funcName, std::string infoToPass)
 {
 	std::cout << starLine << "\tINFORMATION: " << funcName << "\n" << starLine;

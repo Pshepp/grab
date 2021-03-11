@@ -1,39 +1,6 @@
-/**
- * @file node.h
- * @author Preston Sheppard
- * @date 22 Feb 2021
- * @brief This node class is to be used as a part of our total graph abstraction "toolkit".
- *
- * We are defining a node object that utilizes smart pointers to not only increase efficiency but
- * to also help denote "ownership". Our node has a unique_ptr to each connected edge, thus our node
- * owns the edge. This is needed due to smart pointers needing some form of ownership hierarchy in
- * order to allow for proper use. Please note our node pointer structure. The reasoning behind a node
- * owning an edge is due to if a node is deleted all edges must be deleted but not necessarily vice-versa.
- *
- * Please note that not only are our nodes "owned" by the edges, but also by the over-arching graph
- * structure itself. This way we are able to allow nodes to be within the graph structure yet have no
- * edges.
- *
- * ADD MORE INFO/CLARIFICATION AS NEEDED
- */
-
-/*	TODO: The following are in no particular order:
- * 			- Increase our speed using unordered_set, etc. Please keep in mind that we will have to ensure our iterator is correct.
- * 			- Properly track our node index and figure out the pipeline the adjacency matrix/list should use.
- * 					- Fix: Nest our set of edge pointers within a hashmap where key = graph ptr or something
- * 						robustly hashable and value is to our vector of ptrs for our nodes :o)
- * 			- Fix node presence in multiple graph structures, this will take adding a "layer" to our edges that correlates to each structure
- * 				- The following will be within the new "layer" due to their implications in the graph structure itself:
- * 						- leaf, bridge, visited, inEdges, outEdges
- * 			- Possibly implement a relationship check (i.e Node A == Node B) for hunting and raw ptr checks. Will make finding a specific
- * 				node to delete much easier.
- * 			- If memory footprint is too large, begin passing by reference for some of our functions i.e.
- * 					- label addition, etc.
- * 					- returning of our neighbors
- * 			- Algos (mostly worried about how we want to call them, should become clear once all are clean):
- * 				- Leaf detection
- * 				- Bridge detection
- * 			- Good error throwing instead of cout laziness
+/*
+ * TODO:
+ * 		- use unordered set
  */
 
 #ifndef INC_NODE_H_
@@ -92,8 +59,10 @@ public:
 	{
 		if (nodeDebug)
 		{
-			//TODO: Node destructor information msg
+			std::string delMsg = "Removing node with name: " + this->getName();
+			lazyInfo(__LINE__, __func__, delMsg);
 		}
+		this->deleteAllEdges();
 	}
 
 	/************************************************
@@ -130,14 +99,22 @@ public:
 	void addLabel(std::string label);
 	void addLabel(std::vector<std::string> labels);
 
+	//add neighbor as a child
 	void addNeighbor(std::shared_ptr<Node<T>> neighborToAdd,
 			std::string edgeName);
-	void deleteNeighbor(std::shared_ptr<Node<T>> neighborToRemove);
 
-	void deleteEdge(std::shared_ptr<Node<T>> secondNode);
+	//delete a specific edge, will want to take in an edge ptr
+	void deleteEdge(std::shared_ptr<Node<T>> secondNode, Edge<T> *edgeToRemove);
+
+	//delete all edges from our calling node to nodeb
+	void deleteAllEdgesToChild(std::shared_ptr<Node<T>> nodeB);
+	//delete all edges to our calling node from nodeb, i.e. nodeB is parent
+	void deleteAllEdgesToParent(std::shared_ptr<Node<T>> nodeB);
+	//delete all edges between 2 nodes
+	void deleteEdges(std::shared_ptr<Node<T>> nodeB);
+
+	//delete all edges to and from calling node
 	void deleteAllEdges();
-
-	void switchEdgeDirection(std::shared_ptr<Node<T>> nodeB);
 
 	/************************************************
 	 *  STRUCTURAL/RELATIONSHIP CHECKS
@@ -150,7 +127,11 @@ public:
 	bool containsLabel(std::vector<std::string> labelToCheck);
 
 	//TODO: Get rid of this garbage
-	Edge<T>* getConnectingEdge(std::shared_ptr<Node<T>> nodeB);
+	std::vector<Edge<T>*> getConnectingEdges(std::shared_ptr<Node<T>> nodeB);
+	std::vector<Edge<T>*> getInConnectingEdges(std::shared_ptr<Node<T>> nodeB);
+	std::vector<Edge<T>*> getOutConnectingEdges(std::shared_ptr<Node<T>> nodeB);
+
+	void printEdges();
 
 private:
 	//TODO: Remove these lazy checks that are used to keep an eye on things
@@ -209,6 +190,15 @@ private:
 	bool hasInEdge(Edge<T> *possibleInEdge);
 	bool hasOutEdge(Edge<T> *possibleOutEdge);
 
+	//Warning O(nlogn) to run this each time, check our 2 vecs have the same contents order doesnt matter
+
+	bool equalEdgeContents(std::vector<Edge<T>*> vec1,
+			std::vector<Edge<T>*> vec2)
+	{
+		std::sort(vec1.begin(), vec1.end());
+		std::sort(vec2.begin(), vec2.end());
+		return vec1 == vec2;
+	}
 };
 
 /************************************************
@@ -287,206 +277,20 @@ bool Node<T>::getIsVisited() const
 	return this->visited;
 }
 
-//TODO: Get rid of this extra garbage, please note that this raw ptr being returned may not even exist after a deletion
-template<class T>
-Edge<T>* Node<T>::getConnectingEdge(std::shared_ptr<Node<T>> nodeB)
-{
-	if (!(this->isNeighbor(nodeB)))
-	{
-		badBehavior(__LINE__, __func__,
-				"Warning, these nodes are NOT neighbors!");
-		return NULL;
-	}
-	lazyInfo(__LINE__, __func__, "Starting");
-	edgeCheck();
-	nodeB.get()->edgeCheck();
-	//get the edge if nodeB is parent, checking in callings in list
-	Edge<T> *ptrFromCallingIn = NULL;
-	//get the edge if nodeB is child, checking in callings out list
-	Edge<T> *ptrFromCallingOut = NULL;
-	//get the edge if calling is parent, checking the callees in list
-	Edge<T> *ptrFromCalleeIn = NULL;
-	Edge<T> *ptrFromCalleeOut = NULL;
-	int count = 0;
-	//Going to EXTREMELY hard check our logic to ensure everything behaves correctly.
-	std::string borkedMsg =
-			"We encountered an issue with getting our connecting edge.";
-	for (auto const &inEdge : this->inEdges)
-	{
-		//behaving as if our calling is a child, so we must get parent
-		if (inEdge->getSourceNode().get() == nodeB.get())
-		{
-			count++;
-			ptrFromCallingIn = inEdge;
-		}
-	}
-	if (count > 1)
-	{
-		badBehavior(__LINE__, __func__, borkedMsg + "Count value too high!");
-		return NULL;
-	}
-	else
-		count = 0;
-	for (auto const &inEdge : nodeB.get()->inEdges)
-	{
-		//behaving as if our calling is a child, so we must get parent
-		if (inEdge->getSourceNode().get() == this)
-		{
-			lazyInfo(__LINE__, __func__,
-					"Found parent of calling node: " + this->getName());
-			count++;
-			ptrFromCalleeIn = inEdge;
-		}
-	}
-	if (count > 1)
-	{
-		badBehavior(__LINE__, __func__, borkedMsg + "Count value too high!");
-		return NULL;
-	}
-	else
-		count = 0;
-	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
-	{
-		if (outEdge.get()->getSinkNode().get() == nodeB.get())
-		{
-			lazyInfo(__LINE__, __func__,
-					"Found a child from calling node: " + this->getName());
-			count++;
-			ptrFromCallingOut = outEdge.get();
-		}
-	}
-	if (count > 1)
-	{
-		badBehavior(__LINE__, __func__, borkedMsg + "Count value too high!");
-		return NULL;
-	}
-	else
-		count = 0;
-	for (std::unique_ptr<Edge<T>> const &outEdge : nodeB.get()->outEdges)
-	{
-		if (outEdge.get()->getSinkNode().get() == this)
-		{
-			lazyInfo(__LINE__, __func__, "Found a child from our 2nd node");
-			count++;
-			ptrFromCalleeOut = outEdge.get();
-		}
-	}
-	if (count > 1)
-	{
-		badBehavior(__LINE__, __func__, borkedMsg + "Count value too high!");
-		return NULL;
-	}
-	else
-		count = 0;
-	if (nodeDebug)
-	{
-		std::cout << std::endl
-				<< "AGGGGGGGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
-				<< ptrFromCalleeIn << std::endl;
-		std::cout << std::endl << "CALLING IN: " << ptrFromCallingIn
-				<< std::endl << "CALLING OUT: " << ptrFromCallingOut
-				<< std::endl << "OKAY COOL";
-		std::cout << std::endl << "CALLEE IN: " << ptrFromCalleeIn << std::endl
-				<< "CALLEE OUT: " << ptrFromCalleeOut << std::endl;
-	}
-	//disgusting check to make sure edges are being nice, use xor to make sure only 1 is true
-	if (((ptrFromCallingIn == ptrFromCalleeOut)
-			|| (ptrFromCallingOut == ptrFromCalleeIn))
-			//ensure not all nulls
-			&& ((ptrFromCallingIn != NULL) || (ptrFromCallingOut != NULL))
-			//after making sure the pointers are related in the way they should be, we check for odd stuff. Making sure that our edge does not pt to self
-			&& (ptrFromCallingIn != ptrFromCallingOut)
-			&& (ptrFromCalleeIn != ptrFromCalleeOut)
-			&& (ptrFromCallingIn != ptrFromCalleeIn)
-			&& (ptrFromCallingOut != ptrFromCalleeOut))
-	{
-
-		Edge<T> *toRet =
-				(ptrFromCallingIn == 0) ? ptrFromCallingOut : ptrFromCallingIn;
-		if (nodeDebug)
-		{
-			std::cout << std::endl << std::endl
-					<< "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-					<< std::endl << toRet << std::endl
-					<< "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-					<< std::endl;
-		}
-
-		return toRet;
-	}
-	else
-	{
-		badBehavior(__LINE__, __func__,
-				borkedMsg + "\n~~~DISGUSTING CHECK FAILED~~~");
-		return NULL;
-	}
-
-}
-
 template<class T>
 std::weak_ptr<Node<T>> Node<T>::getNeighborByName(std::string name)
 {
-	std::vector<std::weak_ptr<Node<T>>> neighbors = this->getNeighbors();
-	int count = 0;
-	std::weak_ptr<Node<T>> tempReturn;
-	for (std::weak_ptr<Node<T>> &curNeighbor : neighbors)
-	{
-		if (curNeighbor.lock())
-		{
-			std::shared_ptr<Node<T>> temp = curNeighbor.lock();
-			if (temp.get()->getName() == name)
-			{
-				count++;
-				tempReturn = temp;
-			}
-		}
-		else
-		{
-			badBehavior(__LINE__, __func__, "Couldnt lock!");
-		}
-	}
-	if (count > 1)
-		badBehavior(__LINE__, __func__, "Multiple neighbor with same name");
-	return tempReturn;
-
 }
 
 template<class T>
 std::weak_ptr<Node<T>> Node<T>::getNeighborByIndex(unsigned short index)
 {
-	std::vector<std::weak_ptr<Node<T>>> neighbors = this->getNeighbors();
-	int count = 0;
-	std::weak_ptr<Node<T>> tempReturn;
-	for (std::weak_ptr<Node<T>> &curNeighbor : neighbors)
-	{
-		if (curNeighbor.lock())
-		{
-			std::shared_ptr<Node<T>> temp = curNeighbor.lock();
-			if (temp.get()->getIndex() == index)
-			{
-				count++;
-				tempReturn = temp;
-			}
-		}
-		else
-		{
-			badBehavior(__LINE__, __func__, "Couldnt lock!");
-		}
-	}
-	if (count > 1)
-		badBehavior(__LINE__, __func__, "Multiple neighbor with same index");
-	return tempReturn;
 }
 
-/* TODO: How would we like to pass this, in current use it creates a vector of shared
- * 			ptrs that increments the ownership count by 1. As of now let us leave this be.
- *			We must be careful regarding exposing the ptr to the object itself. This will
- *			cause us to break our ownership hierarchy. As of now, returning weak_ptrs to our
- *			smart_ptrs should be enough.
- */
 template<class T>
 std::vector<std::weak_ptr<Node<T>>> Node<T>::getNeighbors()
 {
+	//since this is neighbors we want to remove our dupes. Dont care about ownership
 	std::vector<std::weak_ptr<Node<T>>> children = this->getChildren();
 	std::vector<std::weak_ptr<Node<T>>> parents = this->getParents();
 	children.insert(children.end(), parents.begin(), parents.end());
@@ -498,9 +302,7 @@ inline std::vector<std::weak_ptr<Node<T> > > Node<T>::getChildren()
 {
 	std::vector<std::weak_ptr<Node<T>>> children;
 	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
-	{
 		children.push_back(outEdge->getSinkNode());
-	}
 	return children;
 }
 
@@ -509,128 +311,36 @@ std::vector<std::weak_ptr<Node<T> > > Node<T>::getParents()
 {
 	std::vector<std::weak_ptr<Node<T>>> parents;
 	for (auto const &inEdge : this->inEdges)
-	{
 		parents.push_back(inEdge->getSourceNode());
-	}
 	return parents;
 }
-
-/************************************************
- *  STRUCTURAL/RELATIONSHIP CHECKS
- ***********************************************/
 
 template<class T>
 bool Node<T>::isNeighbor(std::shared_ptr<Node<T>> possibleNeighbor)
 {
-	/* Eventually use this, currently done a different way to keep track on input
-	 * return (this->isChild(possibleNeighbor) ^ this->isNeighbor(possibleNeighbor));
-	 */
-	//fails for cycle
-	bool verboseIsChild = this->isChild(possibleNeighbor);
-	bool verboseIsParent = this->isParent(possibleNeighbor);
-	if (nodeDebug)
-	{
-		std::string isNeighborMsg = "DEFAULT_MSG";
-		if (verboseIsParent && verboseIsChild)
-		{
-			isNeighborMsg = this->getName() + " points to itself";
-		}
-		else if (verboseIsChild ^ verboseIsParent)
-		{
-			isNeighborMsg = this->getName() + " is neighbor of "
-					+ possibleNeighbor.get()->getName();
-		}
-		else if (!(verboseIsParent & verboseIsChild))
-		{
-			isNeighborMsg = this->getName() + " is not neighbor of "
-					+ possibleNeighbor.get()->getName();
-		}
-		lazyInfo(__LINE__, __func__, isNeighborMsg);
-	}
-	return (verboseIsChild || verboseIsParent);
+	return (this->isChild(possibleNeighbor) || this->isParent(possibleNeighbor));
 }
 
-/* Checks if our calling node is a child of input, i.e. possible parent owns our edge
- * TODO: add our check to make sure that our child is "seen" as a child by the parent and vice-versa.
- */
 template<class T>
 bool Node<T>::isChild(std::shared_ptr<Node<T>> possibleParent)
 {
-	unsigned int count = 0;
 	for (auto const &inEdge : this->inEdges)
 	{
 		if (inEdge->getSourceNode().get() == possibleParent.get())
-		{
-			count++;
-			if (nodeDebug)
-			{
-				std::string foundMsg = this->getName() + " is child of "
-						+ possibleParent.get()->getName() + " count = "
-						+ std::to_string(count);
-				lazyInfo(__LINE__, __func__, foundMsg);
-			}
-		}
+			return true;
 	}
-	//ensure only child one time, prevent multiple edges to same
-	if (nodeDebug)
-	{
-		if (count > 1)
-		{
-			std::string badMsg = "Our parent is seen <" + std::to_string(count)
-					+ "> times";
-			badBehavior(__LINE__, __func__, badMsg);
-		}
-		std::string isChildMsg = this->getName() + " -is child of- "
-				+ possibleParent.get()->getName();
-		lazyInfo(__LINE__, __func__, isChildMsg);
-		std::cout << "Childs edges:\n";
-		edgeCheck();
-		std::cout << "Parents edges:\n";
-		possibleParent.get()->edgeCheck();
-	}
-	return (count == 1) ? true : false;
+	return false;
 }
 
-/* Checks if calling node is parent of input i.e. calling node owns the edge
- * TODO: add our check to make sure that our child is "seen" as a child by the parent and vice-versa.
- */
 template<class T>
 bool Node<T>::isParent(std::shared_ptr<Node<T>> possibleChild)
 {
-	unsigned int count = 0;
-	//just forcing to make sure I am understanding that this is what auto const& becomes
 	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
 	{
 		if (outEdge.get()->getSinkNode().get() == possibleChild.get())
-		{
-			count++;
-			if (nodeDebug)
-			{
-				std::string foundMsg = this->getName() + " is parent of "
-						+ possibleChild.get()->getName() + " count = "
-						+ std::to_string(count);
-				lazyInfo(__LINE__, __func__, foundMsg);
-			}
-		}
+			return true;
 	}
-	if (nodeDebug)
-	{
-		if (count > 1)
-		{
-			std::string badMsg = "Our child is seen <" + std::to_string(count)
-					+ "> times";
-			badBehavior(__LINE__, __func__, badMsg);
-		}
-		std::string isParentMsg = this->getName() + " -is parent of- "
-				+ possibleChild.get()->getName();
-		lazyInfo(__LINE__, __func__, isParentMsg);
-		std::cout << "~ Parents edges:\n";
-		edgeCheck();
-		std::cout << "~ Childs edges:\n";
-		possibleChild.get()->edgeCheck();
-		edgeCheck();
-	}
-	return (count == 1) ? true : false;
+	return false;
 }
 
 template<class T>
@@ -648,10 +358,6 @@ bool Node<T>::containsLabel(std::vector<std::string> labelsToCheck)
 	return false;
 }
 
-/************************************************
- *  MUTATORS
- ***********************************************/
-
 template<class T>
 void Node<T>::addLabel(std::string label)
 {
@@ -665,214 +371,285 @@ void Node<T>::addLabel(std::vector<std::string> labels)
 		this->addLabel(currLabel);
 }
 
-/************************************************
- *  GETTER/SETTER PAIRS
- ***********************************************/
-
 template<class T>
 void Node<T>::addNeighbor(std::shared_ptr<Node<T> > neighborToAdd,
 		std::string edgeName)
 {
-	/*if (this->isNeighbor(neighborToAdd))
-	{
-		badBehavior(__LINE__, __func__, "Warning, already neighbors!");
-		return;
-	}*/
 	if (this == neighborToAdd.get())
 	{
 		badBehavior(__LINE__, __func__,
-				"Warning, trying to add self as neighbor!");
+				"Warning trying to add self as neighbor");
 		return;
 	}
 	this->outEdges.push_back(
 			std::make_unique<Edge<T>>(edgeName, this->shared_from_this(),
 					neighborToAdd));
 	neighborToAdd.get()->inEdges.push_back(this->outEdges.back().get());
-	std::cout << "$$$$$$EDGE CHECK OF CALLING NODE\n";
-	edgeCheck();
-	std::cout << "$$$$$$EDGE CHECK OF CALLEE NODE\n";
-	neighborToAdd.get()->edgeCheck();
 }
 
-template<class T>
-void Node<T>::deleteNeighbor(std::shared_ptr<Node<T>> neighborToRemove)
-{
-	std::cout << "NOT IMPLEMENTED PROBABLY DONT NEED" << std::endl;
-}
-
-template<class T>
-void Node<T>::deleteEdge(std::shared_ptr<Node<T> > secondNode)
-{
-	//once we make sure our structure is always maintained we will just use the source & sink ptr from our edge!
-	Edge<T> *connectingEdge = this->getConnectingEdge(secondNode);
-	lazyInfo(__LINE__, __func__,
-			"ENTERING OUR DELETE EDGE ~~~~~~~~~~~~~~~~~~~");
-	edgeCheck();
-	if (connectingEdge != NULL)
-	{
-		//delete our sink that is goign to our node, prevent dangling ptr
-		connectingEdge->getSinkNode().get()->deleteInEdge(connectingEdge);
-		//after ensure no dangle we now delete other side which kills whole edge
-		connectingEdge->getSourceNode().get()->deleteOutEdge(connectingEdge);
-	}
-	else
-	{
-		std::string badMsg = "We could not find connecting edge between node ("
-				+ this->getName() + ") and node ("
-				+ secondNode.get()->getName();
-		badBehavior(__LINE__, __func__, badMsg);
-	}
-
-}
-
-//TODO: Make more fragile to enforce checks, could just get neighbors, get edges between, call delete on list of edges
+//delete all our edges that are going in and out of calling node
 template<class T>
 void Node<T>::deleteAllEdges()
 {
-
-	/*
-	 * for (auto const &inEdge : this->inEdges)
-	{
-		if (possibleInEdge == inEdge.get)
-			count++;
-	}
-	 */
+	if (nodeDebug)
+		lazyInfo(__LINE__, __func__);
 	std::vector<std::weak_ptr<Node<T>>> allNeighbors = this->getNeighbors();
-	for (auto& neigh : allNeighbors)
+	for (auto &neigh : allNeighbors)
 	{
 		if (neigh.lock())
 		{
-			this->deleteEdge(neigh.lock());
+			std::shared_ptr<Node<T>> tempNeigh = neigh.lock();
+			if (nodeDebug)
+			{
+				std::string infoMsg =
+						"Note that we do not care about direction in this case\n\tDeleting edge connecting node ("
+								+ this->getName() + ") and node ("
+								+ tempNeigh.get()->getName() + ")";
+				lazyInfo(__LINE__, __func__, infoMsg);
+			}
+			this->deleteEdges(tempNeigh);
 		}
 		else
 		{
-			badBehavior(__LINE__, __func__, "COULDNT LOCK DELETING ALL");
+			badBehavior(__LINE__, __func__,
+					"Warning, could not lock neighbor in deleting all");
 		}
 	}
-	//deletes all the edges to our parents
-	lazyInfo(__LINE__, __func__, "Beginning");
-	edgeCheck();
-
-	/*
-	std::cout << std::endl << "god have mercy seg faulting" <<std::endl;
-	for (auto &inEdge: this->inEdges)
-	{
-
-		//should be "this" node
-		inEdge->getSinkNode().get()->deleteInEdge(inEdge);
-		//should be "those" nodes
-		inEdge->getSourceNode().get()->deleteOutEdge(inEdge);
-	}
-	std::cout << "\n\tAfter deleting in our edges for node: " << this->getName() <<std::endl;
-	edgeCheck();
-	//deletes all edges to our children
-	//now gives a segfault
-	for (std::unique_ptr<Edge<T>> &outEdge : this->outEdges)
-	{
-		//WARNING SEG FAULT
-		//trying to brute force
-		Edge<T>* tempEdge = outEdge.get();
-		std::cout << "EGHHH: " << tempEdge << std::endl;
-		std::cout << "EGHHH: " << tempEdge->getSourceNode().get() << std::endl;
-		std::cout << "EGHHH: " << tempEdge->getSinkNode().get() << std::endl<<std::endl;
-		tempEdge->getSinkNode().get()->deleteInEdge(tempEdge);
-		std::shared_ptr<Node<T>> tempSourceNode = tempEdge->getSourceNode();
-		//tempSourceNode.get()->deleteOutEdge(tempEdge);
-		//tempEdge->getSourceNode().get()->deleteOutEdge(tempEdge);
-		//outEdge.get()->getSinkNode().get()->deleteInEdge(outEdge.get());
-		//outEdge.get()->getSourceNode().get()->deleteOutEdge(outEdge.get());
-		//outEdge.get()->getSinkNode()
-		//outEdge.get()->getSinkNode().get()->deleteInEdge(outEdge.get());
-		//outEdge.get()->getSourceNode().get()->deleteOutEdge(outEdge.get());
-	}
-	std::cout << "\n\tAfter deleting out our edges for node: " << this->getName() <<std::endl;
-	edgeCheck();
-	*/
 }
 
 template<class T>
-void Node<T>::switchEdgeDirection(std::shared_ptr<Node<T> > nodeB)
+inline void Node<T>::deleteEdge(std::shared_ptr<Node<T> > secondNode,
+		Edge<T> *edgeToRemove)
 {
+}
 
+//delete all edges between our two nodes
+template<class T>
+void Node<T>::deleteEdges(std::shared_ptr<Node<T> > nodeB)
+{
+	if (this->isNeighbor(nodeB))
+	{
+		this->deleteAllEdgesToChild(nodeB);
+		this->deleteAllEdgesToParent(nodeB);
+	}
+	else
+	{
+		std::string badMsg = "Warning: our two nodes (" + this->getName()
+				+ ") and (" + nodeB.get()->getName() + ") are not neighbors.";
+		badBehavior(__LINE__, __func__, badMsg);
 
+		//prints current edges
+		std::cout << "\nNode (" + this->getName()+") current edges\n";
+		this->edgeCheck();
+		std::cout << "\nNode (" + nodeB.get()->getName()+") current edges\n";
+		nodeB.get()->edgeCheck();
+		std::cout << std::endl;
+	}
+}
+
+//calling is parent, nodeB is child
+template<class T>
+void Node<T>::deleteAllEdgesToChild(std::shared_ptr<Node<T> > nodeB)
+{
+	std::vector<Edge<T>*> outConEdges = this->getOutConnectingEdges(nodeB);
+	//TODO: Possibly bad
+	std::vector<Edge<T>*> inConNodeB = nodeB.get()->getInConnectingEdges(
+			this->shared_from_this());
+	//ensure our 2 vectors are the same
+	bool nice = true;
+	for (auto const &outEdge : outConEdges)
+	{
+		if (std::find(inConNodeB.begin(), inConNodeB.end(), outEdge)
+				== inConNodeB.end())
+			nice = false;
+	}
+
+	//TODO: Ensure this works all the time
+	//bool otherNice = equalEdgeContents(outConEdges, inConNodeB);
+
+	if (!nice)
+	{
+		std::string badMsg = "Our connecting out and in edges dont match!";
+		badBehavior(__LINE__, __func__);
+	}
+	else //nice
+	{
+		for (auto const &toDelete : outConEdges)
+		{
+			nodeB.get()->deleteInEdge(toDelete);
+			this->deleteOutEdge(toDelete);
+		}
+	}
+
+}
+
+template<class T>
+void Node<T>::deleteAllEdgesToParent(std::shared_ptr<Node<T> > nodeB)
+{
+	std::vector<Edge<T>*> inConEdges = this->getInConnectingEdges(nodeB);
+	std::vector<Edge<T>*> outConNodeB = nodeB.get()->getOutConnectingEdges(
+			this->shared_from_this());
+	//ensure our 2 vectors are the same, these checks are redundant
+	bool nice = true;
+	for (auto const &inEdge : inConEdges)
+	{
+		if (std::find(outConNodeB.begin(), outConNodeB.end(), inEdge)
+				== outConNodeB.end())
+			nice = false;
+	}
+	if (!nice)
+	{
+		std::string badMsg = "Our connecting out and in edges dont match!";
+		badBehavior(__LINE__, __func__, badMsg);
+	}
+	else //nice
+	{
+		for (auto const &toDelete : outConNodeB)
+		{
+			this->deleteInEdge(toDelete);
+			nodeB.get()->deleteOutEdge(toDelete);
+		}
+	}
+}
+
+//previously we only assumed we had one edge, now we allow for multiple between two nodes.
+template<class T>
+std::vector<Edge<T>*> Node<T>::getConnectingEdges(
+		std::shared_ptr<Node<T>> nodeB)
+{
+	std::vector<Edge<T>*> inThis = this->getInConnectingEdges(nodeB);
+	std::vector<Edge<T>*> outThis = this->getOutConnectingEdges(nodeB);
+	std::vector<Edge<T>*> inNodeB = nodeB.get()->getInConnectingEdges(
+			this->shared_from_this());
+	std::vector<Edge<T>*> outNodeB = nodeB.get()->getOutConnectingEdges(
+			this->shared_from_this());
+	//doing checks to make sure our nodes know what is attached to them
+	bool niceOne = true;
+	for (auto const &inThisEdge : inThis)
+	{
+		if (std::find(outNodeB.begin(), outNodeB.end(), inThisEdge)
+				== outNodeB.end())
+			niceOne = false;
+	}
+	if (!niceOne)
+	{
+		std::string badMsg = "Our connecting out and in edges dont match!";
+		badBehavior(__LINE__, __func__, badMsg);
+	}
+	//other way
+	bool nice1 = true;
+	for (auto const &outThisEdge : outThis)
+	{
+		if (std::find(inNodeB.begin(), inNodeB.end(), outThisEdge)
+				== inNodeB.end())
+			nice1 = false;
+	}
+	if (!nice1)
+	{
+		std::string badMsg = "Our connecting out and in edges dont match!";
+		badBehavior(__LINE__, __func__, badMsg);
+	}
+
+	if (nice1 && niceOne) //nice
+	{
+
+	}
+
+}
+
+//gets all connecting edges owned by callee, so we are checking all edges FROM nodeB
+template<class T>
+std::vector<Edge<T>*> Node<T>::getInConnectingEdges(
+		std::shared_ptr<Node<T>> nodeB)
+{
+	std::vector<Edge<T>*> inConEdges;
+	for (auto const &inEdge : this->inEdges)
+	{
+		if (inEdge->getSourceNode().get() == nodeB.get())
+			inConEdges.push_back(inEdge);
+	}
+	return inConEdges;
+}
+
+//gets all connecting edges owned by our caller, so we are checking all edges FROM our caller TO our callee
+template<class T>
+std::vector<Edge<T>*> Node<T>::getOutConnectingEdges(
+		std::shared_ptr<Node<T>> nodeB)
+{
+	std::vector<Edge<T>*> outConEdges;
+	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
+	{
+		if (outEdge.get()->getSinkNode().get() == nodeB.get())
+			outConEdges.push_back(outEdge.get());
+	}
+	return outConEdges;
+}
+
+template<class T>
+void Node<T>::printEdges()
+{
+	this->edgeCheck();
 }
 
 /************************************************
  *  HELPER FUNCTIONS
  ***********************************************/
 
-//delete an edge in the node inEdges dealio. TODO: Warning - we must delete our in edge (raw ptr) before the out edge (unique_ptr)
+//deletes an edge witin this nodes inEdge list
 template<class T>
 void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 {
-	lazyInfo(__LINE__, __func__, "Removing an incomming edge");
-	edgeCheck();
-	this->inEdges.erase(
-			std::remove(this->inEdges.begin(), this->inEdges.end(),
-					inEdgeToDelete), this->inEdges.end());
-	//this->inEdges.erase(
-	//		std::remove(this->inEdges.begin(), this->inEdges.end(),
-	//				inEdgeToDelete), this->inEdges.end);
-	std::cout << "After removal of in edges\n";
-	edgeCheck();
+	if (this->hasInEdge(inEdgeToDelete))
+	{
+		this->inEdges.erase(
+				std::remove(this->inEdges.begin(), this->inEdges.end(),
+						inEdgeToDelete), this->inEdges.end());
+	}
+	else
+	{
+		std::string badMsg = "Warning: inEdge (" + inEdgeToDelete->getName()
+				+ ") does not exist in node: " + this->getName();
+		badBehavior(__LINE__, __func__, badMsg);
+	}
 }
 
+//deletes an edge within this nodes outEdges list. NOTE THAT YOU MUST DELETE THIS EDGE FROM THE SINK NODES INEDGES LIST BEFORE DELETING THE EDGE FROM THE OUTEDGE LIST DUE TO UNIQUE PTR
 template<class T>
 void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
 {
-	lazyInfo(__LINE__, __func__, "Removing an outgoing edge");
-	edgeCheck();
-	//hopefully this works https://www.fluentcpp.com/2018/09/18/how-to-remove-pointers-from-a-vector-in-cpp/
-	//this->outEdges.erase(std::remove_if(this->outEdges.begin(), this->outEdges.end(), [](std::unique_ptr<Edge<T>> const &itEdge)
-	//		{})
-//https://stackoverflow.com/questions/33202941/removing-a-unique-ptr-of-an-object-from-a-vector-by-an-attribute-value
-	/*	this->outEdges.erase(
-	 std::remove_if(this->outEdges.begin(), this->outEdges.end(),
-	 [](std::unique_ptr<Edge<T>> const &itEdge)
-	 {
-	 if (itEdge.get() == outEdgeToDelete)
-	 {
-	 return true;
-	 }
-	 else
-	 return false;
-	 }), this->outEdges.end());
-	 */
-	//this->outEdges.erase(std::remove_if(this->outEdges.begin(), this->outEdges.end(),[](std::unique_ptr<Edge<T>> const &itEdge) -> bool
-	//		{
-	//possibly use https://stackoverflow.com/questions/15125631/best-way-to-delete-a-stdunique-ptr-from-a-vector-with-a-raw-pointer
-	//		return itEdge.get() == outEdgeToDelete;
-	//		})),  this->outEdges.end());
-	//cant care less at this point, we are going to move all to null ptr after a lazy check to make sure theerea are not null ptrs then we remove the null ptrs. Dunno if this will work, need to try using an iterator but gets grumpy
-	for (auto &curPtr : this->outEdges)
+	if (this->hasOutEdge(outEdgeToDelete))
 	{
-		if (curPtr.get() == outEdgeToDelete)
-		{
-			curPtr.reset();
-		}
+		//first clear out our unique ptr aka destruct edge
+		for (auto &outEdge : this->outEdges)
+			if (outEdge.get() == outEdgeToDelete)
+				outEdge.reset();
+		this->outEdges.erase(
+				std::remove(this->outEdges.begin(), this->outEdges.end(),
+						nullptr), this->outEdges.end());
 	}
-	this->outEdges.erase(
-			std::remove(this->outEdges.begin(), this->outEdges.end(), nullptr),
-			this->outEdges.end());
-	std::cout << "After removal of outEdge\n";
-	edgeCheck();
+	else
+	{
+		std::string badMsg = "Warning: outEdge (" + outEdgeToDelete->getName()
+				+ ") does not exist in node: " + this->getName();
+		badBehavior(__LINE__, __func__, badMsg);
+	}
 }
 
-//eventually get rid of these stupid checks
 template<class T>
 bool Node<T>::hasInEdge(Edge<T> *possibleInEdge)
 {
+	//used to make sure we have only one of the edges in our vec
 	int count = 0;
 	for (auto const &inEdge : this->inEdges)
 	{
-		if (possibleInEdge == inEdge.get)
-			count++;
+		if (possibleInEdge == inEdge)
+			count++; //we have a hit, if this was unorded set we would use diff method
 	}
-	//lazy check
 	if (count > 1)
 	{
-		badBehavior(__LINE__, __func__,
-				"Warning, our in edge count is higher than 1!");
+		std::string badMsg = "Warning: inEdge (" + possibleInEdge->getName()
+				+ ") present multiple times in (" + this->getName() + ")";
+		badBehavior(__LINE__, __func__, badMsg);
 		return false;
 	}
 	return (count == 1) ? true : false;
@@ -881,20 +658,18 @@ bool Node<T>::hasInEdge(Edge<T> *possibleInEdge)
 template<class T>
 bool Node<T>::hasOutEdge(Edge<T> *possibleOutEdge)
 {
-	/*
-	 * std::unique_ptr<Edge<T>> const &outEdge
-	 */
+	//used to make sure we have only one of the edges in our vec
 	int count = 0;
 	for (auto const &outEdge : this->outEdges)
 	{
 		if (possibleOutEdge == outEdge.get())
-			count++;
+			count++; //we have a hit, if this was unorded set we would use diff method
 	}
-	//lazy check
 	if (count > 1)
 	{
-		badBehavior(__LINE__, __func__,
-				"Warning, our out edge count is higher than 1!");
+		std::string badMsg = "Warning: outEdge (" + possibleOutEdge->getName()
+				+ ") present multiple times in (" + this->getName() + ")";
+		badBehavior(__LINE__, __func__, badMsg);
 		return false;
 	}
 	return (count == 1) ? true : false;

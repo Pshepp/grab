@@ -65,7 +65,7 @@ public:
 	//From my understanding, the unique_ptr that owns our edge will be what is deleted, and that will automatically take care of our shared ptrs
 	~Edge()
 	{
-		lazyInfo(__LINE__, __func__, "Deleting edge");
+		lazyInfo(__LINE__, __func__, "Deleting edge with name: " + this->getName());
 	}
 
 	/************************************************
