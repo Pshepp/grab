@@ -63,6 +63,7 @@ public:
 			lazyInfo(__LINE__, __func__, delMsg);
 		}
 		this->deleteAllEdges();
+
 	}
 
 	/************************************************
@@ -153,7 +154,7 @@ private:
 		{
 			std::cout << outEdge.get()->getName() << ", ";
 		}
-		std::cout << std::endl;
+		std::cout << std::endl <<std::endl;
 		//all out edges printed, check if we break when removing "&"
 	}
 
@@ -293,6 +294,14 @@ std::vector<std::weak_ptr<Node<T>>> Node<T>::getNeighbors()
 	//since this is neighbors we want to remove our dupes. Dont care about ownership
 	std::vector<std::weak_ptr<Node<T>>> children = this->getChildren();
 	std::vector<std::weak_ptr<Node<T>>> parents = this->getParents();
+	if (false)
+	{
+		if (children.size() <= 0)
+			badBehavior(__LINE__, __func__, "Children vec size is 0");
+		if (parents.size() <= 0)
+			badBehavior(__LINE__, __func__, "Parent vec size is 0");
+	}
+
 	children.insert(children.end(), parents.begin(), parents.end());
 	return children;
 }
@@ -394,6 +403,11 @@ void Node<T>::deleteAllEdges()
 	if (nodeDebug)
 		lazyInfo(__LINE__, __func__);
 	std::vector<std::weak_ptr<Node<T>>> allNeighbors = this->getNeighbors();
+	if (!(allNeighbors.size() > 0))
+	{
+		badBehavior(__LINE__, __func__, "Neighbors has size < 0");
+		return;
+	}
 	for (auto &neigh : allNeighbors)
 	{
 		if (neigh.lock())
@@ -408,6 +422,7 @@ void Node<T>::deleteAllEdges()
 				lazyInfo(__LINE__, __func__, infoMsg);
 			}
 			this->deleteEdges(tempNeigh);
+			//this->deleteEdges(tempNeigh);
 		}
 		else
 		{
@@ -439,9 +454,9 @@ void Node<T>::deleteEdges(std::shared_ptr<Node<T> > nodeB)
 		badBehavior(__LINE__, __func__, badMsg);
 
 		//prints current edges
-		std::cout << "\nNode (" + this->getName()+") current edges\n";
+		std::cout << "\nNode (" + this->getName() + ") current edges\n";
 		this->edgeCheck();
-		std::cout << "\nNode (" + nodeB.get()->getName()+") current edges\n";
+		std::cout << "\nNode (" + nodeB.get()->getName() + ") current edges\n";
 		nodeB.get()->edgeCheck();
 		std::cout << std::endl;
 	}

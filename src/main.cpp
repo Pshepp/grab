@@ -38,8 +38,9 @@ public:
 	~Atom()
 	{
 		lazyInfo(__LINE__, __func__);
-		//due to our raw ptr, need to preven dangle
-		this->getNode().get()->deleteAllEdges();
+		this->deleteAllBonds();
+		this->atomNodePtr.reset();
+		lazyInfo(__LINE__, __func__, "Atom destructed?");
 	}
 	void deleteAllBonds()
 	{
@@ -77,7 +78,7 @@ public:
 		this->getNode().get()->deleteEdges(otherAtom->getNode());
 	}
 
-	 std::shared_ptr<Node<Atom>> getNode()
+	std::shared_ptr<Node<Atom>> getNode()
 	{
 		return atomNodePtr;
 	}
@@ -90,40 +91,122 @@ private:
 	std::string atomName;
 };
 
+class Molecule
+{
+public:
+	Molecule(std::string name) :
+			moleculeName(name)
+	{
+		molPtr = std::make_unique<Graph<Molecule, Atom>>(name);
+	}
+	~Molecule();
+	void addAtom(Atom *atomToAdd)
+	{
+		this->getMolPtr().get()->addNode(atomToAdd->getNode());
+	}
+	void removeAtom(Atom *atomToRemove)
+	{
+		this->getMolPtr().get()->removeNode(atomToRemove->getNode());
+	}
+	void deleteAtom(Atom *atomToDelete)
+	{
+		//please note that this deletes the node itself
+		this->getMolPtr().get()->deleteNode(atomToDelete->getNode());
+	}
+	void printAtoms()
+	{
+		std::vector<std::weak_ptr<Node<Atom>>> atoms =
+				this->molPtr.get()->getNodes();
+		lazyInfo(__LINE__, __func__,
+				"Graph structure (molecule named " + this->getName()
+						+ ") containing nodes (atoms)");
+		for (auto &i : atoms)
+		{
+			if (i.lock())
+			{
+				std::shared_ptr<Node<Atom>> temp = i.lock();
+				std::cout << "Atom Named: " + temp->getName() << std::endl;
+			}
+			else
+			{
+				badBehavior(__LINE__, __func__, "Couldnt lock");
+			}
+		}
+	}
+	const std::unique_ptr<Graph<Molecule, Atom> >& getMolPtr() const
+	{
+		return molPtr;
+	}
+
+	const std::string& getName() const
+	{
+		return moleculeName;
+	}
+
+	void setName(const std::string &moleculeName)
+	{
+		this->moleculeName = moleculeName;
+	}
+
+private:
+	std::string moleculeName;
+	std::unique_ptr<Graph<Molecule, Atom>> molPtr;
+};
+
 int main()
 {
+
+	Molecule *mol1 = new Molecule("Poob");
 	Atom *atom0 = new Atom("Bobie");
-    Atom *atom1 = new Atom("Steve");
-    Atom *atom2 = new Atom("Ronne");
-    Atom *atom3 = new Atom("Bingo");
-    Atom *atom4 = new Atom("Marsh");
-    Atom *atom5 = new Atom("Delux");
-    Atom *atom6 = new Atom("Frank");
-    Atom *atom7 = new Atom("Bingo1");
-    Atom *atom8 = new Atom("Marsh1");
-    atom0->addBond(atom1);
-    atom1->addBond(atom2);
-    atom2->addBond(atom3);
-    atom3->addBond(atom4);
-    atom4->addBond(atom5);
-    atom1->addBond(atom6);
-    atom5->addBond(atom6);
-    atom2->addBond(atom5);
-    atom2->addBond(atom6);
-    atom5->addBond(atom3);
-    atom2->addBond(atom7);
-    atom7->addBond(atom8);
+	Atom *atom1 = new Atom("Steve");
+	Atom *atom2 = new Atom("Ronne");
+	Atom *atom3 = new Atom("Bingo");
+	Atom *atom4 = new Atom("Marsh");
+	Atom *atom5 = new Atom("Delux");
+	Atom *atom6 = new Atom("Frank");
+	Atom *atom7 = new Atom("Bingo1");
+	Atom *atom8 = new Atom("Marsh1");
+	atom0->addBond(atom1);
+	atom1->addBond(atom2);
+	atom2->addBond(atom3);
+	atom3->addBond(atom4);
+	atom4->addBond(atom5);
+	atom1->addBond(atom6);
+	atom5->addBond(atom6);
+	atom2->addBond(atom5);
+	atom2->addBond(atom6);
+	atom5->addBond(atom3);
+	atom2->addBond(atom7);
+	atom7->addBond(atom8);
 
+	//mol1->addAtom(atom0);
+	mol1->addAtom(atom1);
+	mol1->addAtom(atom2);
+	mol1->addAtom(atom5);
 
-    atom1->printBondedAtoms();
-    std::cout << "Deleting " << atom6->getName() << "\n";
-    delete atom6;
-    atom1->printBondedAtoms();
-    std::cout << "Deleting " << atom4->getName() << "\n";
-    delete atom4;
-    std::cout<<"\nName jeff time to test\n";
-    atom1->printBondedAtoms();
-    atom1->removeBond(atom2);
-    atom1->printBondedAtoms();
+	mol1->printAtoms();
+	//mol1->removeAtom(atom0);
+
+	//mol1->deleteAtom(atom0);
+	//std::cout<<"\n"<<atom0->getName()<<"\n";
+	std::cout << "\ndasdasdasd" << atom0->getName() << atom0->getNode().get()->getName()
+			<< "\n";
+	//Note that this does not delete the shared ptr within the mol1 structure thus it does not truely delete
+	delete atom5;
+	//atom5->printBondedAtoms();
+	atom2->printBondedAtoms();
+	atom4->printBondedAtoms();
+
+	mol1->printAtoms();
+	/*atom1->printBondedAtoms();
+	 std::cout << "Deleting " << atom6->getName() << "\n";
+	 delete atom6;
+	 atom1->printBondedAtoms();
+	 std::cout << "Deleting " << atom4->getName() << "\n";
+	 delete atom4;
+	 std::cout << "\nName jeff time to test\n";
+	 atom1->printBondedAtoms();
+	 atom1->removeBond(atom2);
+	 atom1->printBondedAtoms();*/
 	return 0;
 }

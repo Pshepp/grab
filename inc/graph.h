@@ -24,18 +24,40 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_set>
 
 //may be able to switch this to a forward declare
 #include "node.h"
 
-template<class T>
+//include our algos
+#include "leafFinder.h"
+
+const bool graphDebug = true;
+
+template<class T, class E>
 class Graph
 {
 public:
-	Graph() //should never be called (maybe), honestly it is fine being called
+	Graph()
 	{
 		this->setName("DEFAULT_GRAPH_NAME");
 		this->setIndex(1);
+		if (graphDebug)
+		{
+			lazyInfo(__LINE__, __func__, "Created default graph");
+		}
+	}
+
+	Graph(std::string name)
+	{
+		this->setName(name);
+		this->setIndex(1);
+		if (graphDebug)
+		{
+			std::string conMsg = "Constructed graph with name: "
+					+ this->getName();
+			lazyInfo(__LINE__, __func__, conMsg);
+		}
 	}
 
 	/************************************************
@@ -50,13 +72,11 @@ public:
 	void setLabels(std::vector<std::string> labels);
 	std::vector<std::string> getLabels();
 
-	std::vector<std::vector<std::shared_ptr<Node<T>>>> makeAdjacencyList(); //adj list built when called
+	std::vector<std::vector<std::weak_ptr<Node<E>>>> makeAdjacencyList(); //adj list built when called
 
-	std::vector<std::shared_ptr<Node<T>>> getNodes();
+	std::vector<std::weak_ptr<Node<E>>> getNodes();
 
-	bool containsNode(std::shared_ptr<Node<T>> possibleNode);
-
-	void lazyPrintAdjList();
+	bool containsNode(std::shared_ptr<Node<E>> possibleNode);
 
 	/************************************************
 	 *  MUTATORS
@@ -64,161 +84,195 @@ public:
 	void addLabel(std::string label);
 	void addLabel(std::vector<std::string> labels);
 
-	void addNode(std::shared_ptr<Node<T>> nodeToAdd);
-	//void addNode(std::vector<std::shared_ptr<Node<T>>> nodesToAdd);
+	void addNode(std::shared_ptr<Node<E>> nodeToAdd);
 
-	void deleteNode(std::shared_ptr<Node<T>> nodeToDelete);
+	//remove node just means removing from the current graph structure. Not full delete
+	void removeNode(std::shared_ptr<Node<E>> nodeToRemove);
+	//completely delete out node within this graph, keep in mind this node may exist within other graphs. We must eventually worry about removing the edges that will be related to this node. Same for above
+	void deleteNode(std::shared_ptr<Node<E>> nodeToDelete);
 
 private:
 	unsigned short int index;
 	std::string name;
 	std::vector<std::string> labels;
 
-	//TODO: Keep us from having dupes
-	std::vector<std::shared_ptr<Node<T>>> nodesWithin;
+	//https://en.cppreference.com/w/cpp/memory/owner_less to use as a key
+	//std::vector<std::shared_ptr<Node<T>>> nodesWithin;
+	//need to ensure this is correct
+	std::unordered_set<std::shared_ptr<Node<E>>,
+			std::hash<std::shared_ptr<Node<E>>>> nodesWithin;
 
-	void badBehavior(int lineBroke, const char *funcNameBroke);
+	void nodesWithinRefresh();
 
 };
 
-/************************************************
- *  GETTER/SETTER PAIRS
- ***********************************************/
-
-template<class T>
-void Graph<T>::setIndex(unsigned short int index)
+template<class T, class E>
+void Graph<T, E>::setIndex(unsigned short int index)
 {
 	this->index = index;
 }
 
-template<class T>
-unsigned short int Graph<T>::getIndex() const
+template<class T, class E>
+unsigned short int Graph<T, E>::getIndex() const
 {
 	return this->index;
 }
 
-template<class T>
-void Graph<T>::setName(std::string name)
+template<class T, class E>
+void Graph<T, E>::setName(std::string name)
 {
 	this->name = name;
 }
 
-template<class T>
-std::string Graph<T>::getName() const
+template<class T, class E>
+std::string Graph<T, E>::getName() const
 {
 	return this->name;
 }
 
-template<class T>
-void Graph<T>::setLabels(std::vector<std::string> labels)
+template<class T, class E>
+void Graph<T, E>::setLabels(std::vector<std::string> labels)
 {
 	this->labels = labels;
 }
 
-template<class T>
-std::vector<std::string> Graph<T>::getLabels()
+template<class T, class E>
+std::vector<std::string> Graph<T, E>::getLabels()
 {
 	return this->labels;
 }
 
-template<class T>
-std::vector<std::vector<std::shared_ptr<Node<T> > > > Graph<T>::makeAdjacencyList()
-{
-	std::vector<std::vector<std::shared_ptr<Node<T>>>> adjList;
-	for (std::shared_ptr<Node<T>> currNode : this->nodesWithin)
-		adjList.push_back(currNode.get()->getNeighbors());
-	return adjList;
-}
-
-template<class T>
-std::vector<std::shared_ptr<Node<T> > > Graph<T>::getNodes()
-{
-	return this->nodesWithin;
-}
-
-/************************************************
- *  MUTATORS
- ***********************************************/
-
-template<class T>
-void Graph<T>::addLabel(std::string label)
+template<class T, class E>
+void Graph<T, E>::addLabel(std::string label)
 {
 	this->labels.push_back(label);
 }
 
-template<class T>
-void Graph<T>::addLabel(std::vector<std::string> labels)
+template<class T, class E>
+std::vector<std::vector<std::weak_ptr<Node<E> > > > Graph<T, E>::makeAdjacencyList()
+{
+}
+
+template<class T, class E>
+std::vector<std::weak_ptr<Node<E> > > Graph<T, E>::getNodes()
+{
+
+	this->nodesWithinRefresh();
+	std::vector<std::weak_ptr<Node<E>>> nodes;
+	nodes.insert(nodes.end(), this->nodesWithin.begin(),
+			this->nodesWithin.end());
+
+	/*for (std::weak_ptr<Node<E>> n : nodes)
+	{
+		if (n.lock())
+		{
+			std::shared_ptr<Node<E>> sn = n.lock();
+			std::string m1 = "Node name: " + sn.get()->getName() + " \n";
+			m1 = m1 + "Use count: " + std::to_string(sn.use_count());
+			std::cout << m1 << std::endl;
+			if (sn.get()->getName() == "Delux")
+			{
+				int oES = sn.get()->getChildren().size();
+				int iES = sn.get()->getParents().size();
+				std::string l = "Number Children: " + std::to_string(oES)
+						+ "\nNumber Parents: " + std::to_string(iES);
+				sn.get()->printEdges();
+				l = l + "Number neighbors "
+						+ std::to_string(sn.get()->getNeighbors().size());
+				std::cout << l << "\n";
+
+			}
+		}
+	}*/
+	return nodes;
+}
+
+template<class T, class E>
+bool Graph<T, E>::containsNode(std::shared_ptr<Node<E> > possibleNode)
+{
+	this->nodesWithinRefresh();
+	return this->nodesWithin.count(possibleNode);
+}
+
+template<class T, class E>
+void Graph<T, E>::addLabel(std::vector<std::string> labels)
 {
 	for (std::string currLabel : labels)
 		this->addLabel(currLabel);
 }
 
-template<class T>
-void Graph<T>::addNode(std::shared_ptr<Node<T> > nodeToAdd)
+template<class T, class E>
+void Graph<T, E>::addNode(std::shared_ptr<Node<E>> nodeToAdd)
 {
-	this->nodesWithin.push_back(nodeToAdd);
+	this->nodesWithinRefresh();
+	if (this->nodesWithin.count(nodeToAdd))
+	{
+		badBehavior(__LINE__, __func__, "Node already present");
+	}
+	else
+		this->nodesWithin.insert(nodeToAdd);
+
 }
 
-template<class T>
-bool Graph<T>::containsNode(std::shared_ptr<Node<T> > possibleNode)
+template<class T, class E>
+void Graph<T, E>::removeNode(std::shared_ptr<Node<E>> nodeToRemove)
 {
-	for (std::shared_ptr<Node<T>> currNode : this->nodesWithin)
+	this->nodesWithinRefresh();
+	int i = this->nodesWithin.count(nodeToRemove);
+	if (i)
 	{
-		if (currNode.get() == possibleNode.get())
-			return true;
+		this->nodesWithin.erase(nodeToRemove);
 	}
-	return false;
+	else
+	{
+		/*for (std::shared_ptr<Node<E>> i : this->nodesWithin)
+		 {
+		 std::cout << "\n\n\n" << nodeToRemove.get()->getName() << "\n\n\n";
+		 std::cout << "\n\n\n" << i.get()->getName() << "\n\n\n";
+		 std::string j =
+		 (nodeToRemove.get() == i.get()) ? "SAME" : "DIFFERENT";
+		 std::cout << "\n\n\n" << j << "\n\n\n";
+		 }*/
+		badBehavior(__LINE__, __func__,
+				"Node not present in graph" + std::to_string(i));
+	}
+
 }
 
-//doesnt print the actual node we are looking at
-template<class T>
-void Graph<T>::lazyPrintAdjList()
+template<class T, class E>
+void Graph<T, E>::deleteNode(std::shared_ptr<Node<E> > nodeToDelete)
 {
-	std::vector<std::vector<Node<T>>> tempList = this->makeAdjacencyList();
-	std::cout << std::endl << "==== ADJ LIST ====";
-	for (std::vector<std::shared_ptr<Node<T>>> nodeNeighborList : tempList)
-	{
-		std::cout << std::endl;
-		for (std::shared_ptr<Node<T>> nodeNeighbor : nodeNeighborList)
-			std::cout << " -> " << nodeNeighbor.get()->getName() << ", ";
-	}
+//TODO: update our node class to handle this type of hashing because we will want to delete edges associated with this
+
+	this->removeNode(nodeToDelete);	//remove our node from this structure first
+
+//will eventuall use deleteAllEdges with a weak_ptr to the graph, this way we can hash it to the edges
+	nodeToDelete.get()->~Node();
+
 }
 
-template<class T>
-void Graph<T>::deleteNode(std::shared_ptr<Node<T> > nodeToDelete)
+template<class T, class E>
+void Graph<T, E>::nodesWithinRefresh()
 {
-	if (!(this->containsNode(nodeToDelete)))
+	std::vector<std::shared_ptr<Node<E>>> dirt;
+	for (std::shared_ptr<Node<E>> const &node : this->nodesWithin)
 	{
-		badBehavior(__LINE__, __func__);
-		std::cout << "Doesn't contain node" << std::endl;
-		return;
-	}
-	//delete all our edges which only leaves the shared pointer from our graph structure. This allows for a floating node in our structures.
-	nodeToDelete.get()->deleteAllEdges();
-	//sorry, just want to delete by index because lazy for now. This is bad due to the face that it is not defined in 100% of cases. Small edge cases plus very inneficient
-	for (int currIndex = 0; currIndex < this->nodesWithin.size(); currIndex++)
-	{
-		//found node now remove from final place
-		if (this->nodesWithin[currIndex].get() == nodeToDelete.get())
-			this->nodesWithin.erase(this->nodesWithin.begin() + currIndex);
+		if (node.unique())
+		{
+			/*lazyInfo(__LINE__, __func__,
+					"Deleting node: " + node.get()->getName()
+							+ " node use count: "
+							+ std::to_string(node.use_count()));*/
+			dirt.push_back(node);
+
+		}
+
 	}
 
-	if (this->containsNode(nodeToDelete))
+	for (auto &node : dirt)
 	{
-		badBehavior(__LINE__, __func__);
-		std::cout << "Node did not delete" << std::endl;
+		this->nodesWithin.erase(node);
 	}
-}
-
-//LAZY ERROR USE FOLLOWING TO CALL badBehavior(__LINE__, __func__);
-template<class T>
-void Graph<T>::badBehavior(int lineBroke, const char *funcNameBroke)
-{
-	std::cout << "****************************************" << std::endl
-			<< "\tBORKED" << "****************************************"
-			<< std::endl;
-	std::cout << "Borked Function Name: " << funcNameBroke << std::endl;
-	std::cout << "Line Number: " << lineBroke << std::endl << std::endl;
 }
 
 #endif /* INC_GRAPH_H_ */
