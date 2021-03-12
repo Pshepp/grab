@@ -1,13 +1,3 @@
-/**
- * @file lazyPrints.h
- * @author Preston Sheppard
- * @brief Due to being lazy and wanting to watch data this was created.
- *
- * I wanted to keep an eye on certain behaviours and data so
- * 	this uses macros to print out what line the print was called on, a user
- * 	message, etc.
- *
- */
 #ifndef INC_LAZYPRINTS_H_
 #define INC_LAZYPRINTS_H_
 
