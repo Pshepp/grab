@@ -4,6 +4,7 @@
  * @date 10 Mar 2021
  * @brief In order to help use keep a track on behavior this was thrown together.
  *
+ *	Wherever badBehavior is present we want to add error catching
  */
 
 #ifndef INC_LAZYPRINTS_H_

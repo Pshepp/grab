@@ -1,3 +1,8 @@
+/* NOTE: We need to know our "owning" graphs in order to delete ourself from them when we completely get removed
+ * 			How do we know our "parents"? Know up? Raw ptr makes sense but needs so much more logic....
+ *
+ */
+
 #ifndef INC_NODE_H_
 #define INC_NODE_H_
 
@@ -124,6 +129,9 @@ private:
 	 *
 	 * 			Below is how I am hoping to implement our multi-graph ownership.
 	 * 			Will be uncommented and filled out in a different branch.
+	 *
+	 * 			We must know what graph structures we belong to in order to properly delete
+	 * 			ourself. This way we do not have to do any checks like previously done.
 	 */
 	//std::vector<std::weak_ptr<int>> owningGraphs; //do not use weak_ptr, other options?
 	//std::unordered_map<std::weak_ptr<int>, std::vector<std::unique_ptr<Edge<T>>>> graphSpecifcOutEdges; //this is an unordered map using some type of value that signifies the graph, note that every graph in here must be present in owningGraphs but not vice versa.

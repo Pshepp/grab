@@ -1,4 +1,4 @@
-/* TODO: Various todos
+/* TODO: Various todos (will be completed in different branches)
  * 			- use unordered set to replace vector in places we do not need to know order
  * 			- incorporate multi-graph ownership
  *
