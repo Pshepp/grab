@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef INC_GRAPH_H_
-#define INC_GRAPH_H_
+#ifndef INC_STRUCTURE_GRAPH_H_
+#define INC_STRUCTURE_GRAPH_H_
 
 #include <vector>
 #include <memory>
@@ -292,5 +292,5 @@ inline void Graph<T, E>::refreshContaining()
 		this->containingNodes.erase(node);
 }
 
-#endif /* INC_GRAPH_H_ */
+#endif /* INC_STRUCTURE_GRAPH_H_ */
 

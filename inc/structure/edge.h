@@ -1,5 +1,5 @@
-#ifndef INC_EDGE_H_
-#define INC_EDGE_H_
+#ifndef INC_STRUCTURE_EDGE_H_
+#define INC_STRUCTURE_EDGE_H_
 
 #include <memory>
 #include <vector>
@@ -270,4 +270,4 @@ void Edge<T>::addLabel(std::vector<std::string> labels)
 		this->addLabel(currLabel);
 }
 
-#endif /* INC_EDGE_H_ */
+#endif /* INC_STRUCTURE_EDGE_H_ */

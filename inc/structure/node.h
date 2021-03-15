@@ -3,8 +3,8 @@
  *
  */
 
-#ifndef INC_NODE_H_
-#define INC_NODE_H_
+#ifndef INC_STRUCTURE_NODE_H_
+#define INC_STRUCTURE_NODE_H_
 
 #include <vector>
 #include <memory>
@@ -809,4 +809,4 @@ bool Node<T>::hasOutEdge(Edge<T> *possibleOutEdge)
 	return (count == 1) ? true : false;
 }
 
-#endif /* INC_NODE_H_ */
+#endif /* INC_STRUCTURE_NODE_H_ */
