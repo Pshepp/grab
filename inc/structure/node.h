@@ -696,7 +696,7 @@ std::string node<T>::edgesAsString()
 {
 	std::string edgesString = "";
 	edgesString = "========= EDGE CHECK: " + this->getName()
-			+ " =========\ntIn Edges Size: "
+			+ " =========\n\tIn Edges Size: "
 			+ std::to_string(this->inEdges.size()) + "\n\t";
 	for (edge<T> *const inEdge : this->inEdges)
 		edgesString += inEdge->getName() + ", ";
@@ -704,7 +704,7 @@ std::string node<T>::edgesAsString()
 			+ std::to_string(this->outEdges.size()) + "\n\t";
 	for (std::unique_ptr<edge<T>> const &outEdge : this->outEdges)
 		edgesString += outEdge.get()->getName() + ", ";
-	edgesString += "\n\n";
+	edgesString += "\n";
 	return edgesString;
 }
 
