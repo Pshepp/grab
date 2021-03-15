@@ -22,16 +22,16 @@ const bool graphDebug = true;
 template<class E> class Node;
 
 template<class T, class E>
-class graph
+class Graph
 {
 public:
 	/************************************************
 	 *  CONSTRUCTORS/DESTRUCTORS
 	 ***********************************************/
-	graph();
-	graph(std::string name);
+	Graph();
+	Graph(std::string name);
 
-	~graph();
+	~Graph();
 
 	/************************************************
 	 *  GETTER/SETTER PAIRS
@@ -97,7 +97,7 @@ private:
  ***********************************************/
 
 template<class T, class E>
-graph<T, E>::graph()
+Graph<T, E>::Graph()
 {
 	this->setName("DEFAULT_GRAPH_NAME");
 	this->setIndex(1);
@@ -109,7 +109,7 @@ graph<T, E>::graph()
 }
 
 template<class T, class E>
-graph<T, E>::graph(std::string name)
+Graph<T, E>::Graph(std::string name)
 {
 	this->setName(name);
 	this->setIndex(1);
@@ -121,7 +121,7 @@ graph<T, E>::graph(std::string name)
 }
 
 template<class T, class E>
-graph<T, E>::~graph()
+Graph<T, E>::~Graph()
 {
 	//eventually call our delete edges function where we pass in our grpah hash
 	if (graphDebug)
@@ -136,43 +136,43 @@ graph<T, E>::~graph()
  ***********************************************/
 
 template<class T, class E>
-void graph<T, E>::setIndex(unsigned short int index)
+void Graph<T, E>::setIndex(unsigned short int index)
 {
 	this->index = index;
 }
 
 template<class T, class E>
-unsigned short int graph<T, E>::getIndex() const
+unsigned short int Graph<T, E>::getIndex() const
 {
 	return this->index;
 }
 
 template<class T, class E>
-void graph<T, E>::setName(std::string name)
+void Graph<T, E>::setName(std::string name)
 {
 	this->name = name;
 }
 
 template<class T, class E>
-std::string graph<T, E>::getName() const
+std::string Graph<T, E>::getName() const
 {
 	return this->name;
 }
 
 template<class T, class E>
-void graph<T, E>::setLabels(std::vector<std::string> labels)
+void Graph<T, E>::setLabels(std::vector<std::string> labels)
 {
 	this->labels = labels;
 }
 
 template<class T, class E>
-std::vector<std::string> graph<T, E>::getLabels() const
+std::vector<std::string> Graph<T, E>::getLabels() const
 {
 	return this->labels;
 }
 
 template<class T, class E>
-std::vector<std::weak_ptr<Node<E> > > graph<T, E>::getNodes()
+std::vector<std::weak_ptr<Node<E> > > Graph<T, E>::getNodes()
 {
 	this->refreshContaining();
 	std::vector<std::weak_ptr<Node<E>>> nodes;
@@ -186,20 +186,20 @@ std::vector<std::weak_ptr<Node<E> > > graph<T, E>::getNodes()
  ***********************************************/
 
 template<class T, class E>
-void graph<T, E>::addLabel(std::string label)
+void Graph<T, E>::addLabel(std::string label)
 {
 	this->labels.push_back(label);
 }
 
 template<class T, class E>
-void graph<T, E>::addLabel(std::vector<std::string> labels)
+void Graph<T, E>::addLabel(std::vector<std::string> labels)
 {
 	for (std::string currLabel : labels)
 		this->addLabel(currLabel);
 }
 
 template<class T, class E>
-void graph<T, E>::addNode(std::shared_ptr<Node<E> > nodeToAdd)
+void Graph<T, E>::addNode(std::shared_ptr<Node<E> > nodeToAdd)
 {
 	this->refreshContaining();
 	if (this->containsNode(nodeToAdd))
@@ -215,7 +215,7 @@ void graph<T, E>::addNode(std::shared_ptr<Node<E> > nodeToAdd)
 
 // Deletes all edges to and from the node, yet keeps the node in the graph
 template<class T, class E>
-void graph<T, E>::deleteEdges(std::shared_ptr<Node<E> > node)
+void Graph<T, E>::deleteEdges(std::shared_ptr<Node<E> > node)
 {
 //eventually call in our value to pass in the hash of the graph, as of now just delete all our edges of the node and also make sure it be a part of the graph
 	this->refreshContaining();
@@ -232,7 +232,7 @@ void graph<T, E>::deleteEdges(std::shared_ptr<Node<E> > node)
 }
 
 template<class T, class E>
-void graph<T, E>::removeNode(std::shared_ptr<Node<E> > node)
+void Graph<T, E>::removeNode(std::shared_ptr<Node<E> > node)
 {
 	this->refreshContaining();
 	if (this->containsNode(node))
@@ -257,7 +257,7 @@ void graph<T, E>::removeNode(std::shared_ptr<Node<E> > node)
  *  STRUCTURAL/RELATIONSHIP CHECKS/CHANGES/GETS
  ***********************************************/
 template<class T, class E>
-bool graph<T, E>::containsNode(std::shared_ptr<Node<E> > possiblenode)
+bool Graph<T, E>::containsNode(std::shared_ptr<Node<E> > possiblenode)
 {
 	return this->containingNodes.count(possiblenode);
 }
@@ -267,7 +267,7 @@ bool graph<T, E>::containsNode(std::shared_ptr<Node<E> > possiblenode)
  ***********************************************/
 //called before we ever mess with our containing nodes
 template<class T, class E>
-inline void graph<T, E>::refreshContaining()
+inline void Graph<T, E>::refreshContaining()
 {
 //tl:dr this keeps us happy since our nodes cant do any deleting of self from graph structures
 	if (graphDebug)
