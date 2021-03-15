@@ -14,7 +14,7 @@
 #include "../lazyPrints.h"
 
 //probably gonna need to full include
-template<class T> class edge;
+template<class T> class Edge;
 template<class T, class E> class Graph;
 
 const bool nodeDebug = true;
@@ -26,16 +26,16 @@ const bool nodeVerbose = true;
 int graphHash = 100;
 
 template<class T>
-class node: public std::enable_shared_from_this<node<T>>
+class Node: public std::enable_shared_from_this<Node<T>>
 {
 public:
 	/************************************************
 	 *  CONSTRUCTORS/DESTRUCTORS
 	 ***********************************************/
-	node();
-	node(std::string name);
+	Node();
+	Node(std::string name);
 
-	~node();
+	~Node();
 
 	/************************************************
 	 *  GETTER/SETTER PAIRS
@@ -58,9 +58,9 @@ public:
 	void setIsVisited(bool visited);
 	bool getIsVisited() const;
 
-	std::vector<std::weak_ptr<node<T>>> getNeighbors();
-	std::vector<std::weak_ptr<node<T>>> getChildren();
-	std::vector<std::weak_ptr<node<T>>> getParents();
+	std::vector<std::weak_ptr<Node<T>>> getNeighbors();
+	std::vector<std::weak_ptr<Node<T>>> getChildren();
+	std::vector<std::weak_ptr<Node<T>>> getParents();
 
 	/************************************************
 	 *  MUTATORS
@@ -68,29 +68,29 @@ public:
 	void addLabel(std::string label);
 	void addLabel(std::vector<std::string> labels);
 
-	void addChild(std::string edgeName, std::shared_ptr<node<T>> freshChild);
-	void addParent(std::string edgeName, std::shared_ptr<node<T>> freshParent);
+	void addChild(std::string edgeName, std::shared_ptr<Node<T>> freshChild);
+	void addParent(std::string edgeName, std::shared_ptr<Node<T>> freshParent);
 
-	void deleteEdgesToChild(std::shared_ptr<node<T>> child);
-	void deleteEdgesToParent(std::shared_ptr<node<T>> parent);
-	void deleteEdges(std::shared_ptr<node<T>> nodeB);
+	void deleteEdgesToChild(std::shared_ptr<Node<T>> child);
+	void deleteEdgesToParent(std::shared_ptr<Node<T>> parent);
+	void deleteEdges(std::shared_ptr<Node<T>> nodeB);
 
 	void deleteEdges();
 
 	/************************************************
 	 *  STRUCTURAL/RELATIONSHIP CHECKS/CHANGES/GETS
 	 ***********************************************/
-	bool isChild(std::shared_ptr<node<T>> possibleParent);
-	bool isParent(std::shared_ptr<node<T>> possibleChild);
-	bool isNeighbor(std::shared_ptr<node<T>> possibleNeighbor);
+	bool isChild(std::shared_ptr<Node<T>> possibleParent);
+	bool isParent(std::shared_ptr<Node<T>> possibleChild);
+	bool isNeighbor(std::shared_ptr<Node<T>> possibleNeighbor);
 
 	bool containsLabel(std::string labelToCheck);
 	bool containsLabel(std::vector<std::string> labelToCheck); //Do we need?
 
 	//POSSIBLY CHANGE THIS TO PRIVATE HELPER FUNCTIONS. AS OF NOW KEEP PUBLIC AND TRY NOT TO USE OUTSIDE
-	std::vector<edge<T>*> getConnectingEdges(std::shared_ptr<node<T>> nodeB);
-	std::vector<edge<T>*> getInConnectingEdges(std::shared_ptr<node<T>> nodeB);
-	std::vector<edge<T>*> getOutConnectingEdges(std::shared_ptr<node<T>> nodeB);
+	std::vector<Edge<T>*> getConnectingEdges(std::shared_ptr<Node<T>> nodeB);
+	std::vector<Edge<T>*> getInConnectingEdges(std::shared_ptr<Node<T>> nodeB);
+	std::vector<Edge<T>*> getOutConnectingEdges(std::shared_ptr<Node<T>> nodeB);
 
 	/************************************************
 	 *  HELPING FUNCTIONS
@@ -100,9 +100,9 @@ public:
 	/* BELOW ARE FUNCTIONS THAT HAVE BEEN REMOVED BUT MAY BE ADDED AGAIN
 	 *
 	 */
-	//std::weak_ptr<node<T>> getNeighborByName(std::string name);
-	//std::weak_ptr<node<T>> getNeighborByIndex(unsigned short index);
-	//void deleteEdge(std::shared_ptr<node<T>> secondnode, Edge<T> *edgeToRemove); //delete edge to specific neighbor
+	//std::weak_ptr<Node<T>> getNeighborByName(std::string name);
+	//std::weak_ptr<Node<T>> getNeighborByIndex(unsigned short index);
+	//void deleteEdge(std::shared_ptr<Node<T>> secondnode, Edge<T> *edgeToRemove); //delete edge to specific neighbor
 private:
 	/************************************************
 	 *  IDENTIFIERS/INFORMATION
@@ -125,8 +125,8 @@ private:
 	/************************************************
 	 *  STRUCTURAL OWNERSHIP
 	 ***********************************************/
-	std::vector<std::unique_ptr<edge<T>>> outEdges;
-	std::vector<edge<T>*> inEdges;
+	std::vector<std::unique_ptr<Edge<T>>> outEdges;
+	std::vector<Edge<T>*> inEdges;
 
 	/* TODO: How do we know about our owning graph? The issue
 	 * 			is I do not want to have to deal with a template
@@ -139,20 +139,20 @@ private:
 	 * 			ourself. This way we do not have to do any checks like previously done.
 	 */
 	//std::vector<std::weak_ptr<int>> owningGraphs; //do not use weak_ptr, other options?
-	//std::unordered_map<std::weak_ptr<int>, std::vector<std::unique_ptr<edge<T>>>> graphSpecifcOutEdges; //this is an unordered map using some type of value that signifies the graph, note that every graph in here must be present in owningGraphs but not vice versa.
-	//std::unordered_map<std::weak_ptr<int>, std::vector<edge<T>* >> graphSpecificInEdges;
+	//std::unordered_map<std::weak_ptr<int>, std::vector<std::unique_ptr<Edge<T>>>> graphSpecifcOutEdges; //this is an unordered map using some type of value that signifies the graph, note that every graph in here must be present in owningGraphs but not vice versa.
+	//std::unordered_map<std::weak_ptr<int>, std::vector<Edge<T>* >> graphSpecificInEdges;
 	/************************************************
 	 *  HELPER FUNCTIONS
 	 ***********************************************/
-	void deleteInEdge(edge<T> *inEdgeToDelete);
-	void deleteOutEdge(edge<T> *outEdgeToDelete);
+	void deleteInEdge(Edge<T> *inEdgeToDelete);
+	void deleteOutEdge(Edge<T> *outEdgeToDelete);
 
-	bool hasInEdge(edge<T> *possibleInEdge);
-	bool hasOutEdge(edge<T> *possibleOutEdge);
+	bool hasInEdge(Edge<T> *possibleInEdge);
+	bool hasOutEdge(Edge<T> *possibleOutEdge);
 
 	//Currently testing in order to ensure efficacy
-	bool equalEdgeContents(std::vector<edge<T>*> vec1,
-			std::vector<edge<T>*> vec2)
+	bool equalEdgeContents(std::vector<Edge<T>*> vec1,
+			std::vector<Edge<T>*> vec2)
 	{
 		std::sort(vec1.begin(), vec1.end());
 		std::sort(vec2.begin(), vec2.end());
@@ -165,7 +165,7 @@ private:
  ***********************************************/
 
 template<class T>
-node<T>::node()
+Node<T>::Node()
 {
 	this->setName("DEFAULT_NODE_NAME");
 	this->setIndex(1);
@@ -181,7 +181,7 @@ node<T>::node()
 }
 
 template<class T>
-node<T>::node(std::string name)
+Node<T>::Node(std::string name)
 {
 	this->setName(name);
 	this->setIndex(1);
@@ -196,7 +196,7 @@ node<T>::node(std::string name)
 }
 
 template<class T>
-node<T>::~node()
+Node<T>::~Node()
 {
 	if (nodeDebug)
 	{
@@ -212,82 +212,82 @@ node<T>::~node()
  ***********************************************/
 
 template<class T>
-void node<T>::setIndex(unsigned short int index)
+void Node<T>::setIndex(unsigned short int index)
 {
 	this->index = index;
 }
 
 template<class T>
-unsigned short int node<T>::getIndex() const
+unsigned short int Node<T>::getIndex() const
 {
 	return index;
 }
 
 template<class T>
-void node<T>::setName(std::string name)
+void Node<T>::setName(std::string name)
 {
 	this->name = name;
 }
 
 template<class T>
-std::string node<T>::getName() const
+std::string Node<T>::getName() const
 {
 	return name;
 }
 
 template<class T>
-void node<T>::setLabels(std::vector<std::string> labels)
+void Node<T>::setLabels(std::vector<std::string> labels)
 {
 	this->labels = labels;
 }
 
 template<class T>
-std::vector<std::string> node<T>::getLabels() const
+std::vector<std::string> Node<T>::getLabels() const
 {
 	return labels;
 }
 
 template<class T>
-void node<T>::setIsLeaf(bool leaf)
+void Node<T>::setIsLeaf(bool leaf)
 {
 	this->leaf = leaf;
 }
 
 template<class T>
-bool node<T>::getIsLeaf() const
+bool Node<T>::getIsLeaf() const
 {
 	return leaf;
 }
 
 template<class T>
-void node<T>::setIsBridge(bool bridge)
+void Node<T>::setIsBridge(bool bridge)
 {
 	this->bridge = bridge;
 }
 
 template<class T>
-bool node<T>::getIsBridge() const
+bool Node<T>::getIsBridge() const
 {
 	return bridge;
 }
 
 template<class T>
-void node<T>::setIsVisited(bool visited)
+void Node<T>::setIsVisited(bool visited)
 {
 	this->visited = visited;
 }
 
 template<class T>
-bool node<T>::getIsVisited() const
+bool Node<T>::getIsVisited() const
 {
 	return visited;
 }
 
 template<class T>
-std::vector<std::weak_ptr<node<T> > > node<T>::getNeighbors()
+std::vector<std::weak_ptr<Node<T> > > Node<T>::getNeighbors()
 {
-	std::vector<std::weak_ptr<node<T>>> children = this->getChildren();
-	std::vector<std::weak_ptr<node<T>>> parents = this->getParents();
+	std::vector<std::weak_ptr<Node<T>>> children = this->getChildren();
+	std::vector<std::weak_ptr<Node<T>>> parents = this->getParents();
 	children.insert(children.end(), parents.begin(), parents.end());
 	if (nodeDebug && (children.size() == 0))
 		lazyInfo(__LINE__, __func__,
@@ -296,10 +296,10 @@ std::vector<std::weak_ptr<node<T> > > node<T>::getNeighbors()
 }
 
 template<class T>
-std::vector<std::weak_ptr<node<T> > > node<T>::getChildren()
+std::vector<std::weak_ptr<Node<T> > > Node<T>::getChildren()
 {
-	std::vector<std::weak_ptr<node<T>>> children;
-	for (std::unique_ptr<edge<T>> const &outEdge : this->outEdges)
+	std::vector<std::weak_ptr<Node<T>>> children;
+	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
 		children.push_back(outEdge->getSinkNode());
 	if (nodeDebug && (children.size() == 0))
 		lazyInfo(__LINE__, __func__,
@@ -308,10 +308,10 @@ std::vector<std::weak_ptr<node<T> > > node<T>::getChildren()
 }
 
 template<class T>
-std::vector<std::weak_ptr<node<T> > > node<T>::getParents()
+std::vector<std::weak_ptr<Node<T> > > Node<T>::getParents()
 {
-	std::vector<std::weak_ptr<node<T>>> parents;
-	for (edge<T> *inEdge : this->inEdges)
+	std::vector<std::weak_ptr<Node<T>>> parents;
+	for (Edge<T> *inEdge : this->inEdges)
 		parents.push_back(inEdge->getSourceNode());
 	if (nodeDebug && (parents.size() == 0))
 		lazyInfo(__LINE__, __func__, "Returned vector of parents is of size 0");
@@ -323,21 +323,21 @@ std::vector<std::weak_ptr<node<T> > > node<T>::getParents()
  ***********************************************/
 
 template<class T>
-void node<T>::addLabel(std::string label)
+void Node<T>::addLabel(std::string label)
 {
 	this->labels.push_back(label);
 }
 
 template<class T>
-void node<T>::addLabel(std::vector<std::string> labels)
+void Node<T>::addLabel(std::vector<std::string> labels)
 {
 	for (std::string currLabel : labels)
 		this->addLabel(currLabel);
 }
 
 template<class T>
-void node<T>::addChild(std::string edgeName,
-		std::shared_ptr<node<T> > freshChild)
+void Node<T>::addChild(std::string edgeName,
+		std::shared_ptr<Node<T> > freshChild)
 {
 	if (nodeDebug)
 	{
@@ -353,7 +353,7 @@ void node<T>::addChild(std::string edgeName,
 		return;
 	}
 	this->outEdges.push_back(
-			std::make_unique<edge<T>>(edgeName, this->shared_from_this(),
+			std::make_unique<Edge<T>>(edgeName, this->shared_from_this(),
 					freshChild));
 	//probably should worry about popping last out, most likely should use a temp then move it
 	freshChild.get()->inEdges.push_back(this->outEdges.back().get());
@@ -367,8 +367,8 @@ void node<T>::addChild(std::string edgeName,
 }
 
 template<class T>
-void node<T>::addParent(std::string edgeName,
-		std::shared_ptr<node<T> > freshParent)
+void Node<T>::addParent(std::string edgeName,
+		std::shared_ptr<Node<T> > freshParent)
 {
 	if (nodeDebug)
 	{
@@ -384,7 +384,7 @@ void node<T>::addParent(std::string edgeName,
 		return;
 	}
 	freshParent.get()->outEdges.push_back(
-			std::make_unique<edge<T>>(edgeName, freshParent,
+			std::make_unique<Edge<T>>(edgeName, freshParent,
 					this->shared_from_this()));
 	this->inEdges.push_back(freshParent.get()->outEdges.back().get());
 	if (nodeDebug)
@@ -398,16 +398,16 @@ void node<T>::addParent(std::string edgeName,
 }
 
 template<class T>
-void node<T>::deleteEdgesToChild(std::shared_ptr<node<T> > child)
+void Node<T>::deleteEdgesToChild(std::shared_ptr<Node<T> > child)
 {
 	if (nodeVerbose)
 	{
-		std::vector<edge<T>*> outConEdges = this->getOutConnectingEdges(child);
-		std::vector<edge<T>*> inConnodeB = child.get()->getInConnectingEdges(
+		std::vector<Edge<T>*> outConEdges = this->getOutConnectingEdges(child);
+		std::vector<Edge<T>*> inConnodeB = child.get()->getInConnectingEdges(
 				this->shared_from_this());
 		bool niceOne = true;
 		//one way of checking our vecs are equal
-		for (edge<T> *const outEdge : outConEdges)
+		for (Edge<T> *const outEdge : outConEdges)
 		{
 			if (std::find(inConnodeB.begin(), inConnodeB.end(), outEdge)
 					== inConnodeB.end())
@@ -419,7 +419,7 @@ void node<T>::deleteEdgesToChild(std::shared_ptr<node<T> > child)
 		{
 			if (niceOne)
 			{
-				for (edge<T> *const toDelete : outConEdges)
+				for (Edge<T> *const toDelete : outConEdges)
 				{
 					child.get()->deleteInEdge(toDelete);
 					this->deleteOutEdge(toDelete);
@@ -441,8 +441,8 @@ void node<T>::deleteEdgesToChild(std::shared_ptr<node<T> > child)
 	}
 	else
 	{
-		std::vector<edge<T>*> outConEdges = this->getOutConnectingEdges(child);
-		for (edge<T> *const toDelete : outConEdges)
+		std::vector<Edge<T>*> outConEdges = this->getOutConnectingEdges(child);
+		for (Edge<T> *const toDelete : outConEdges)
 		{
 			child.get()->deleteInEdge(toDelete);
 			this->deleteOutEdge(toDelete);
@@ -451,12 +451,12 @@ void node<T>::deleteEdgesToChild(std::shared_ptr<node<T> > child)
 }
 
 template<class T>
-void node<T>::deleteEdgesToParent(std::shared_ptr<node<T> > parent)
+void Node<T>::deleteEdgesToParent(std::shared_ptr<Node<T> > parent)
 {
 	if (nodeVerbose)
 	{
-		std::vector<edge<T>*> inConEdges = this->getInConnectingEdges(parent);
-		std::vector<edge<T>*> outConnodeB = parent.get()->getOutConnectingEdges(
+		std::vector<Edge<T>*> inConEdges = this->getInConnectingEdges(parent);
+		std::vector<Edge<T>*> outConnodeB = parent.get()->getOutConnectingEdges(
 				this->shared_from_this());
 		bool niceOne = true;
 		for (auto const &inEdge : inConEdges)
@@ -471,7 +471,7 @@ void node<T>::deleteEdgesToParent(std::shared_ptr<node<T> > parent)
 		{
 			if (niceOne)
 			{
-				for (edge<T> *const toDelete : outConnodeB)
+				for (Edge<T> *const toDelete : outConnodeB)
 				{
 					this->deleteInEdge(toDelete);
 					parent.get()->deleteOutEdge(toDelete);
@@ -494,9 +494,9 @@ void node<T>::deleteEdgesToParent(std::shared_ptr<node<T> > parent)
 	}
 	else
 	{
-		std::vector<edge<T>*> outConnodeB = parent.get()->getOutConnectingEdges(
+		std::vector<Edge<T>*> outConnodeB = parent.get()->getOutConnectingEdges(
 				this->shared_from_this());
-		for (edge<T> *const toDelete : outConnodeB)
+		for (Edge<T> *const toDelete : outConnodeB)
 		{
 			this->deleteInEdge(toDelete);
 			parent.get()->deleteOutEdge(toDelete);
@@ -505,7 +505,7 @@ void node<T>::deleteEdgesToParent(std::shared_ptr<node<T> > parent)
 }
 
 template<class T>
-void node<T>::deleteEdges(std::shared_ptr<node<T> > nodeB)
+void Node<T>::deleteEdges(std::shared_ptr<Node<T> > nodeB)
 {
 	if (nodeDebug)
 	{
@@ -548,7 +548,7 @@ void node<T>::deleteEdges(std::shared_ptr<node<T> > nodeB)
 }
 
 template<class T>
-void node<T>::deleteEdges()
+void Node<T>::deleteEdges()
 {
 	if (nodeDebug)
 	{
@@ -557,14 +557,14 @@ void node<T>::deleteEdges()
 				"Removing all edges around node (" + this->getName() + ")\n"
 						+ edgesS);
 	}
-	std::vector<std::weak_ptr<node<T>>> allNeighbors = this->getNeighbors();
+	std::vector<std::weak_ptr<Node<T>>> allNeighbors = this->getNeighbors();
 	if (allNeighbors.size() > 0)
 	{
-		for (std::weak_ptr<node<T>> neigh : allNeighbors)
+		for (std::weak_ptr<Node<T>> neigh : allNeighbors)
 		{
 			if (neigh.lock())
 			{
-				std::shared_ptr<node<T>> tempN = neigh.lock();
+				std::shared_ptr<Node<T>> tempN = neigh.lock();
 				if (nodeDebug)
 				{
 					std::string infoMsg =
@@ -596,9 +596,9 @@ void node<T>::deleteEdges()
  ***********************************************/
 
 template<class T>
-bool node<T>::isChild(std::shared_ptr<node<T> > possibleParent)
+bool Node<T>::isChild(std::shared_ptr<Node<T> > possibleParent)
 {
-	for (edge<T> *const inEdge : this->inEdges)
+	for (Edge<T> *const inEdge : this->inEdges)
 	{
 		if (inEdge->getSourceNode().get() == possibleParent.get())
 			return true;
@@ -607,9 +607,9 @@ bool node<T>::isChild(std::shared_ptr<node<T> > possibleParent)
 }
 
 template<class T>
-bool node<T>::isParent(std::shared_ptr<node<T> > possibleChild)
+bool Node<T>::isParent(std::shared_ptr<Node<T> > possibleChild)
 {
-	for (std::unique_ptr<edge<T>> const &outEdge : this->outEdges)
+	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
 	{
 		if (outEdge.get()->getSinkNode().get() == possibleChild.get())
 			return true;
@@ -618,21 +618,21 @@ bool node<T>::isParent(std::shared_ptr<node<T> > possibleChild)
 }
 
 template<class T>
-bool node<T>::isNeighbor(std::shared_ptr<node<T> > possibleNeighbor)
+bool Node<T>::isNeighbor(std::shared_ptr<Node<T> > possibleNeighbor)
 {
 	//Do we want to worry about granularity? Something can be both parent and child if either a cycle of a self-pointing edge
 	return (this->isChild(possibleNeighbor) || this->isParent(possibleNeighbor));
 }
 
 template<class T>
-bool node<T>::containsLabel(std::string labelToCheck)
+bool Node<T>::containsLabel(std::string labelToCheck)
 {
 	return (std::find(this->labels.begin(), this->labels.end(), labelToCheck)
 			!= this->labels.end()) ? true : false;
 }
 
 template<class T>
-bool node<T>::containsLabel(std::vector<std::string> labelsToCheck)
+bool Node<T>::containsLabel(std::vector<std::string> labelsToCheck)
 {
 	for (std::string currLabel : labelsToCheck)
 		return this->containsLabel(currLabel);
@@ -643,16 +643,16 @@ bool node<T>::containsLabel(std::vector<std::string> labelsToCheck)
  *			TODO: finish it
  */
 template<class T>
-std::vector<edge<T>*> node<T>::getConnectingEdges(
-		std::shared_ptr<node<T> > nodeB)
+std::vector<Edge<T>*> Node<T>::getConnectingEdges(
+		std::shared_ptr<Node<T> > nodeB)
 {
 	if (nodeVerbose)
 	{
-		std::vector<edge<T>*> inThis = this->getInConnectingEdges(nodeB);
-		std::vector<edge<T>*> outThis = this->getOutConnectingEdges(nodeB);
-		std::vector<edge<T>*> innodeB = nodeB.get()->getInConnectingEdges(
+		std::vector<Edge<T>*> inThis = this->getInConnectingEdges(nodeB);
+		std::vector<Edge<T>*> outThis = this->getOutConnectingEdges(nodeB);
+		std::vector<Edge<T>*> innodeB = nodeB.get()->getInConnectingEdges(
 				this->shared_from_this());
-		std::vector<edge<T>*> outnodeB = nodeB.get()->getOutConnectingEdges(
+		std::vector<Edge<T>*> outnodeB = nodeB.get()->getOutConnectingEdges(
 				this->shared_from_thiss());
 
 	}
@@ -663,11 +663,11 @@ std::vector<edge<T>*> node<T>::getConnectingEdges(
 }
 
 template<class T>
-std::vector<edge<T>*> node<T>::getInConnectingEdges(
-		std::shared_ptr<node<T> > nodeB)
+std::vector<Edge<T>*> Node<T>::getInConnectingEdges(
+		std::shared_ptr<Node<T> > nodeB)
 {
-	std::vector<edge<T>*> inConEdges;
-	for (edge<T>* const inEdge : this->inEdges)
+	std::vector<Edge<T>*> inConEdges;
+	for (Edge<T>* const inEdge : this->inEdges)
 	{
 		if (inEdge->getSourceNode().get() == nodeB.get())
 			inConEdges.push_back(inEdge);
@@ -676,11 +676,11 @@ std::vector<edge<T>*> node<T>::getInConnectingEdges(
 }
 
 template<class T>
-std::vector<edge<T>*> node<T>::getOutConnectingEdges(
-		std::shared_ptr<node<T> > nodeB)
+std::vector<Edge<T>*> Node<T>::getOutConnectingEdges(
+		std::shared_ptr<Node<T> > nodeB)
 {
-	std::vector<edge<T>*> outConEdges;
-	for (std::unique_ptr<edge<T>> const &outEdge : this->outEdges)
+	std::vector<Edge<T>*> outConEdges;
+	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
 	{
 		if (outEdge.get()->getSinkNode().get() == nodeB.get())
 			outConEdges.push_back(outEdge.get());
@@ -692,17 +692,17 @@ std::vector<edge<T>*> node<T>::getOutConnectingEdges(
  *  HELPING FUNCTIONS
  ***********************************************/
 template<class T>
-std::string node<T>::edgesAsString()
+std::string Node<T>::edgesAsString()
 {
 	std::string edgesString = "";
 	edgesString = "========= EDGE CHECK: " + this->getName()
 			+ " =========\n\tIn Edges Size: "
 			+ std::to_string(this->inEdges.size()) + "\n\t";
-	for (edge<T> *const inEdge : this->inEdges)
+	for (Edge<T> *const inEdge : this->inEdges)
 		edgesString += inEdge->getName() + ", ";
 	edgesString += "\n\tOut Edges Size: "
 			+ std::to_string(this->outEdges.size()) + "\n\t";
-	for (std::unique_ptr<edge<T>> const &outEdge : this->outEdges)
+	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
 		edgesString += outEdge.get()->getName() + ", ";
 	edgesString += "\n";
 	return edgesString;
@@ -712,7 +712,7 @@ std::string node<T>::edgesAsString()
  *  HELPER FUNCTIONS
  ***********************************************/
 template<class T>
-void node<T>::deleteInEdge(edge<T> *inEdgeToDelete)
+void Node<T>::deleteInEdge(Edge<T> *inEdgeToDelete)
 {
 	if (nodeDebug)
 	{
@@ -740,7 +740,7 @@ void node<T>::deleteInEdge(edge<T> *inEdgeToDelete)
 }
 
 template<class T>
-void node<T>::deleteOutEdge(edge<T> *outEdgeToDelete)
+void Node<T>::deleteOutEdge(Edge<T> *outEdgeToDelete)
 {
 	if (nodeDebug)
 	{
@@ -749,7 +749,7 @@ void node<T>::deleteOutEdge(edge<T> *outEdgeToDelete)
 	}
 	if (this->hasOutEdge(outEdgeToDelete))
 	{
-		for (std::unique_ptr<edge<T>> &outEdge : this->outEdges)
+		for (std::unique_ptr<Edge<T>> &outEdge : this->outEdges)
 		{
 			if (outEdge.get() == outEdgeToDelete)
 				outEdge.reset();
@@ -772,10 +772,10 @@ void node<T>::deleteOutEdge(edge<T> *outEdgeToDelete)
 }
 
 template<class T>
-bool node<T>::hasInEdge(edge<T> *possibleInEdge)
+bool Node<T>::hasInEdge(Edge<T> *possibleInEdge)
 {
 	int count = 0;
-	for (edge<T> *const inEdge : this->inEdges)
+	for (Edge<T> *const inEdge : this->inEdges)
 	{
 		if (inEdge == possibleInEdge)
 			count++;
@@ -791,10 +791,10 @@ bool node<T>::hasInEdge(edge<T> *possibleInEdge)
 }
 
 template<class T>
-bool node<T>::hasOutEdge(edge<T> *possibleOutEdge)
+bool Node<T>::hasOutEdge(Edge<T> *possibleOutEdge)
 {
 	int count = 0;
-	for (std::unique_ptr<edge<T>> const &outEdge : this->outEdges)
+	for (std::unique_ptr<Edge<T>> const &outEdge : this->outEdges)
 	{
 		if (possibleOutEdge == outEdge.get())
 			count++;
