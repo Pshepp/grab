@@ -19,7 +19,7 @@
 
 const bool graphDebug = true;
 
-template<class E> class node;
+template<class E> class Node;
 
 template<class T, class E>
 class graph
@@ -45,7 +45,7 @@ public:
 	void setLabels(std::vector<std::string> labels);
 	std::vector<std::string> getLabels() const;
 
-	std::vector<std::weak_ptr<node<E>>> getNodes();
+	std::vector<std::weak_ptr<Node<E>>> getNodes();
 
 	/************************************************
 	 *  MUTATORS
@@ -53,20 +53,20 @@ public:
 	void addLabel(std::string label);
 	void addLabel(std::vector<std::string> labels);
 
-	void addNode(std::shared_ptr<node<E>> nodeToAdd);
+	void addNode(std::shared_ptr<Node<E>> nodeToAdd);
 
-	void deleteEdges(std::shared_ptr<node<E>> node);
-	void removeNode(std::shared_ptr<node<E>> node);
+	void deleteEdges(std::shared_ptr<Node<E>> node);
+	void removeNode(std::shared_ptr<Node<E>> node);
 
 	/************************************************
 	 *  STRUCTURAL/RELATIONSHIP CHECKS/CHANGES/GETS
 	 ***********************************************/
-	bool containsNode(std::shared_ptr<node<E>> possiblenode);
+	bool containsNode(std::shared_ptr<Node<E>> possiblenode);
 
 	/* BELOW ARE FUNCTIONS THAT HAVE BEEN REMOVED BUT MAY BE ADDED AGAIN
 	 *
 	 */
-	//std::vector<std::vector<std::weak_ptr<node<E>>>> makeAdjacencyList();
+	//std::vector<std::vector<std::weak_ptr<Node<E>>>> makeAdjacencyList();
 private:
 	/************************************************
 	 *  IDENTIFIERS
@@ -78,7 +78,7 @@ private:
 	/************************************************
 	 *  STRUCTURAL OWNERSHIP
 	 ***********************************************/
-	std::unordered_set<std::shared_ptr<node<E>>> containingNodes;
+	std::unordered_set<std::shared_ptr<Node<E>>> containingNodes;
 
 	/************************************************
 	 *  HELPER FUNCTIONS
@@ -172,10 +172,10 @@ std::vector<std::string> graph<T, E>::getLabels() const
 }
 
 template<class T, class E>
-std::vector<std::weak_ptr<node<E> > > graph<T, E>::getNodes()
+std::vector<std::weak_ptr<Node<E> > > graph<T, E>::getNodes()
 {
 	this->refreshContaining();
-	std::vector<std::weak_ptr<node<E>>> nodes;
+	std::vector<std::weak_ptr<Node<E>>> nodes;
 	nodes.insert(nodes.end(), this->containingNodes.begin(),
 			this->containingNodes.end());
 	return nodes;
@@ -199,7 +199,7 @@ void graph<T, E>::addLabel(std::vector<std::string> labels)
 }
 
 template<class T, class E>
-void graph<T, E>::addNode(std::shared_ptr<node<E> > nodeToAdd)
+void graph<T, E>::addNode(std::shared_ptr<Node<E> > nodeToAdd)
 {
 	this->refreshContaining();
 	if (this->containsNode(nodeToAdd))
@@ -215,7 +215,7 @@ void graph<T, E>::addNode(std::shared_ptr<node<E> > nodeToAdd)
 
 // Deletes all edges to and from the node, yet keeps the node in the graph
 template<class T, class E>
-void graph<T, E>::deleteEdges(std::shared_ptr<node<E> > node)
+void graph<T, E>::deleteEdges(std::shared_ptr<Node<E> > node)
 {
 //eventually call in our value to pass in the hash of the graph, as of now just delete all our edges of the node and also make sure it be a part of the graph
 	this->refreshContaining();
@@ -232,7 +232,7 @@ void graph<T, E>::deleteEdges(std::shared_ptr<node<E> > node)
 }
 
 template<class T, class E>
-void graph<T, E>::removeNode(std::shared_ptr<node<E> > node)
+void graph<T, E>::removeNode(std::shared_ptr<Node<E> > node)
 {
 	this->refreshContaining();
 	if (this->containsNode(node))
@@ -257,7 +257,7 @@ void graph<T, E>::removeNode(std::shared_ptr<node<E> > node)
  *  STRUCTURAL/RELATIONSHIP CHECKS/CHANGES/GETS
  ***********************************************/
 template<class T, class E>
-bool graph<T, E>::containsNode(std::shared_ptr<node<E> > possiblenode)
+bool graph<T, E>::containsNode(std::shared_ptr<Node<E> > possiblenode)
 {
 	return this->containingNodes.count(possiblenode);
 }
@@ -272,8 +272,8 @@ inline void graph<T, E>::refreshContaining()
 //tl:dr this keeps us happy since our nodes cant do any deleting of self from graph structures
 	if (graphDebug)
 		lazyInfo(__LINE__, __func__);
-	std::vector<std::shared_ptr<node<E>>> dirt;
-	for (std::shared_ptr<node<E>> const &node : this->containingNodes)
+	std::vector<std::shared_ptr<Node<E>>> dirt;
+	for (std::shared_ptr<Node<E>> const &node : this->containingNodes)
 	{
 		if (node.unique())
 		{
