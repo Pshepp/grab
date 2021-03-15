@@ -107,12 +107,14 @@ Some divine blurb
 * Cycles and the issues. A blurb and two approaches
     * I feel this is where our entity properties (i.e. is leaf) will shine. As above, we would create our list of "mega-trimmed-cycles" which we would THEN run the full cycle detection algos on. 
     * Brute force each path: 
-    * B
+    * Break down to simple cycles then iterate and try to throw them on the graph to detect cycles
 * Subgraph matching (subgraph isomorphism problem)
-    * 
+    * Same as above, tons of papers on subgraph matching.
 
 ## ARGH NOTES
 As of now, we gotta keep in mind that this is only our memory structure itself, we can add anything to classes as long as they know of one another in the previously described manner. 
+
+Need to do testing to see which is better for both subgraph matching and our total cycle detect. 
 
 ### Good Info
 http://www.sc.ehu.es/acwbecae/ikerkuntza/these/Ch2.pdf
