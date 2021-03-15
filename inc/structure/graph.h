@@ -267,7 +267,7 @@ bool Graph<T, E>::containsNode(std::shared_ptr<Node<E> > possiblenode)
  ***********************************************/
 //called before we ever mess with our containing nodes
 template<class T, class E>
-inline void Graph<T, E>::refreshContaining()
+void Graph<T, E>::refreshContaining()
 {
 //tl:dr this keeps us happy since our nodes cant do any deleting of self from graph structures
 	if (graphDebug)
