@@ -75,7 +75,9 @@ private:
 	unsigned short int index;
 	std::string name;
 	std::vector<std::string> labels;
+
 	//some sort of unique ID that we can hash for mapping our edges to specific graphs, i.e. creating specific graph "structures"
+	std::uintptr_t graphId;
 
 	/************************************************
 	 *  STRUCTURAL OWNERSHIP
