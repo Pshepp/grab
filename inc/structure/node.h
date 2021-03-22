@@ -10,6 +10,7 @@
 #include <memory>
 #include <unordered_map>
 #include <algorithm>
+#include <cstdint>
 
 #include "../lazyPrints.h"
 
@@ -40,6 +41,7 @@ public:
 	/************************************************
 	 *  GETTER/SETTER PAIRS
 	 ***********************************************/
+	//Must we worry about index regarding different graph structures?
 	void setIndex(unsigned short int index);
 	unsigned short int getIndex() const;
 
@@ -49,6 +51,7 @@ public:
 	void setLabels(std::vector<std::string> labels);
 	std::vector<std::string> getLabels() const;
 
+	//Must we worry about index regarding different graph structures? I would say more so here than other places due to this having structure relations depend on the structure itself
 	void setIsLeaf(bool leaf);
 	bool getIsLeaf() const;
 
@@ -62,6 +65,11 @@ public:
 	std::vector<std::weak_ptr<Node<T>>> getChildren();
 	std::vector<std::weak_ptr<Node<T>>> getParents();
 
+	//overloads for getting our connected nodes
+	std::vector<std::weak_ptr<Node<T>>> getNeighbors(std::uintptr_t graphId);
+	std::vector<std::weak_ptr<Node<T>>> getChildren(std::uintptr_t graphId);
+	std::vector<std::weak_ptr<Node<T>>> getParents(std::uintptr_t graphId);
+
 	/************************************************
 	 *  MUTATORS
 	 ***********************************************/
@@ -71,11 +79,27 @@ public:
 	void addChild(std::string edgeName, std::shared_ptr<Node<T>> freshChild);
 	void addParent(std::string edgeName, std::shared_ptr<Node<T>> freshParent);
 
+	//overloads for adding our nodes to a specific graph, please note that all overloads should only be called from our graph class
+	void addChild(std::uintptr_t graphId, std::string edgeName,
+			std::shared_ptr<Node<T>> freshChild);
+	void addParent(std::uintptr_t graphId, std::string edgeName,
+			std::shared_ptr<Node<T>> freshParent);
+
 	void deleteEdgesToChild(std::shared_ptr<Node<T>> child);
 	void deleteEdgesToParent(std::shared_ptr<Node<T>> parent);
 	void deleteEdges(std::shared_ptr<Node<T>> nodeB);
 
+	//overloads for our edge deletion
+	void deleteEdgesToChild(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> child);
+	void deleteEdgesToParent(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> parent);
+	void deleteEdges(std::uintptr_t graphId, std::shared_ptr<Node<T>> nodeB);
+
 	void deleteEdges();
+
+	//overload for our total edge deletion i.e. creating a floating node
+	void deleteEdge(std::uintptr_t graphId);
 
 	/************************************************
 	 *  STRUCTURAL/RELATIONSHIP CHECKS/CHANGES/GETS
@@ -84,14 +108,29 @@ public:
 	bool isParent(std::shared_ptr<Node<T>> possibleChild);
 	bool isNeighbor(std::shared_ptr<Node<T>> possibleNeighbor);
 
+	//overloads for our relationship check
+	bool isChild(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> possibleParent);
+	bool isParent(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> possibleChild);
+	bool isNeighbor(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> possibleNeighbor);
+
 	bool containsLabel(std::string labelToCheck);
 	bool containsLabel(std::vector<std::string> labelToCheck); //Do we need?
 
-	//POSSIBLY CHANGE THIS TO PRIVATE HELPER FUNCTIONS. AS OF NOW KEEP PUBLIC AND TRY NOT TO USE OUTSIDE
+	//POSSIBLY CHANGE THIS TO PRIVATE HELPER FUNCTIONS. AS OF NOW KEEP PUBLIC AND TRY NOT TO USE OUTSIDE just going to have to overload everything to do with edges to deal with our map addition. Is there a simpler way?
 	std::vector<Edge<T>*> getConnectingEdges(std::shared_ptr<Node<T>> nodeB);
 	std::vector<Edge<T>*> getInConnectingEdges(std::shared_ptr<Node<T>> nodeB);
 	std::vector<Edge<T>*> getOutConnectingEdges(std::shared_ptr<Node<T>> nodeB);
 
+	//Overloads for our get edges
+	std::vector<Edge<T>*> getConnectingEdges(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> nodeB);
+	std::vector<Edge<T>*> getInConnectingEdges(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> nodeB);
+	std::vector<Edge<T>*> getOutConnectingEdges(std::uintptr_t graphId,
+			std::shared_ptr<Node<T>> nodeB);
 	/************************************************
 	 *  HELPING FUNCTIONS
 	 ***********************************************/
@@ -114,6 +153,7 @@ private:
 	/************************************************
 	 *  STRUCTURAL ATTRIBUTES
 	 ***********************************************/
+	//must I overload this also
 	bool leaf;
 	bool bridge;
 
@@ -125,32 +165,33 @@ private:
 	/************************************************
 	 *  STRUCTURAL OWNERSHIP
 	 ***********************************************/
+	//for now just keep them seperate, one for our non-"observed" structure and another for "observed" edges
 	std::vector<std::unique_ptr<Edge<T>>> outEdges;
 	std::vector<Edge<T>*> inEdges;
 
-	/* TODO: How do we know about our owning graph? The issue
-	 * 			is I do not want to have to deal with a template
-	 * 			with 2 types instead fo 1. Seems impossible as of now.
-	 *
-	 * 			Below is how I am hoping to implement our multi-graph ownership.
-	 * 			Will be uncommented and filled out in a different branch.
-	 *
-	 * 			We must know what graph structures we belong to in order to properly delete
-	 * 			ourself. This way we do not have to do any checks like previously done.
-	 */
-	//std::vector<std::weak_ptr<int>> owningGraphs; //do not use weak_ptr, other options?
-	//std::unordered_map<std::weak_ptr<int>, std::vector<std::unique_ptr<Edge<T>>>> graphSpecifcOutEdges; //this is an unordered map using some type of value that signifies the graph, note that every graph in here must be present in owningGraphs but not vice versa.
-	//std::unordered_map<std::weak_ptr<int>, std::vector<Edge<T>* >> graphSpecificInEdges;
+	// Feels like a bad idea, but if it works nice.
+	std::unordered_map<std::uintptr_t, std::vector<std::unique_ptr<Edge<T>>>> graphSpecificOutEdges;
+	std::unordered_map<std::uintptr_t, std::vector<Edge<T>*>> graphSpecificInEdges;
+
 	/************************************************
 	 *  HELPER FUNCTIONS
 	 ***********************************************/
+
 	void deleteInEdge(Edge<T> *inEdgeToDelete);
 	void deleteOutEdge(Edge<T> *outEdgeToDelete);
+
+	//overload our edge deletion helpers
+	void deleteInEdge(std::uintptr_t graphId, Edge<T> *inEdgeToDelete);
+	void deleteOutEdge(std::uintptr_t graphId, Edge<T> *outEdgeToDelete);
 
 	bool hasInEdge(Edge<T> *possibleInEdge);
 	bool hasOutEdge(Edge<T> *possibleOutEdge);
 
-	//Currently testing in order to ensure efficacy
+	//overload our edge "presence" checking
+	bool hasInEdge(std::uintptr_t graphId, Edge<T> *possibleInEdge);
+	bool hasOutEdge(std::uintptr_t graphId, Edge<T> *possibleOutEdge);
+
+	//Currently testing in order to ensure efficacy, seems like it works proper but let's leave it here for now.
 	bool equalEdgeContents(std::vector<Edge<T>*> vec1,
 			std::vector<Edge<T>*> vec2)
 	{
@@ -667,7 +708,7 @@ std::vector<Edge<T>*> Node<T>::getInConnectingEdges(
 		std::shared_ptr<Node<T> > nodeB)
 {
 	std::vector<Edge<T>*> inConEdges;
-	for (Edge<T>* const inEdge : this->inEdges)
+	for (Edge<T> *const inEdge : this->inEdges)
 	{
 		if (inEdge->getSourceNode().get() == nodeB.get())
 			inConEdges.push_back(inEdge);

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <cstdint>
 
 #include "../lazyPrints.h"
 
@@ -21,7 +22,8 @@ public:
 	Edge();
 	Edge(std::string name, std::shared_ptr<Node<T>> sourceNode,
 			std::shared_ptr<Node<T>> sinkNode);
-	//edge(std::string name, std::weak_ptr<Graph<T, E>> somePtrToGraph, std::shared_ptr<Node<T>> sourceNode, std::shared_ptr<Node<T>> sinkNode);
+	Edge(std::string name, std::uintptr_t graphKey, std::shared_ptr<Node<T>> sourceNode,
+			std::shared_ptr<Node<T>> sinkNode);
 
 	~Edge();
 
@@ -91,10 +93,9 @@ private:
 	std::shared_ptr<Node<T>> sourceNode;
 	std::shared_ptr<Node<T>> sinkNode;
 
-	/*TODO: If we are in a specific graph we should know which graph we are in. What
-	 *			is our "default" graph when we dont actually use a graph.
-	 */
-	//int owningGraph;
+	//if this node was created for a specific graph then we will have that reference here, probably wont work, do we even need this?
+	std::uintptr_t owningGraphKey;
+
 	/************************************************
 	 *  HELPER FUNCTIONS
 	 ***********************************************/

@@ -53,6 +53,7 @@ public:
 	void addLabel(std::string label);
 	void addLabel(std::vector<std::string> labels);
 
+	//for our add node, edges, etc. for this should just be calling the overloaded functions within node. Those functions should not be called anywhere else.
 	void addNode(std::shared_ptr<Node<E>> nodeToAdd);
 
 	void deleteEdges(std::shared_ptr<Node<E>> node);
@@ -74,11 +75,13 @@ private:
 	unsigned short int index;
 	std::string name;
 	std::vector<std::string> labels;
+	//some sort of unique ID that we can hash for mapping our edges to specific graphs, i.e. creating specific graph "structures"
 
 	/************************************************
 	 *  STRUCTURAL OWNERSHIP
 	 ***********************************************/
-	std::unordered_set<std::shared_ptr<Node<E>>> containingNodes;
+	std::unordered_set<std::weak_ptr<Node<E>>> containingNodes;
+
 
 	/************************************************
 	 *  HELPER FUNCTIONS
